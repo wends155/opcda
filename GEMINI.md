@@ -6,7 +6,7 @@
 * **Triggers:** "Plan", "Design", "Analyze", "Debug", **"Investigate"**
 * **Responsibility:**
     * **Analyze** Go/COM interactions (`golang.org/x/sys/windows`).
-    * **Investigate** OPC connectivity errors.
+    * **Investigate** OPC connectivity errors using `godoc` and `context7`.
     * **Create** detailed, step-by-step implementation plans.
     * **Define** the verification strategy.
 
@@ -22,8 +22,9 @@
 ## 🛠️ Tool-Centric Architecture
 **Rule:** Agents interact with the world through tools.
 1.  **Prioritize Go Tools**: Use `go test` for verification, `go build` for compilation checks.
-2.  **Code-Index for Navigation**: Use `code-index` to map COM interface usage patterns.
-3.  **Context7 for Research**: Query OPC DA Automation interface documentation.
+2.  **godoc for Exploration**: ALWAYS use `godoc` first to understand package structure and exported symbols.
+3.  **Code-Index for Navigation**: Use `code-index` to map COM interface usage patterns.
+4.  **Context7 for Research**: Query external OPC DA Automation interface documentation.
 
 ---
 

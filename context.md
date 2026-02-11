@@ -28,7 +28,7 @@
 ### 🛠️ Recent Changes (Last 3 Cycles)
 1.  **2026-02-12 (Project Init):** Configured project root to `c:\Users\WSALIGAN\code\opcda`.
 2.  **2026-02-12 (Documentation Overhaul):** Corrected documentation to reflect Go implementation. Created `architecture.md` with deep dependency, API, and FFI mapping (Vtbl/SyscallN).
-3.  **2026-02-12 (Context Linking):** Established documentation hierarchy by linking `context.md` to `architecture.md`.
+3.  **2026-02-12 (Tool Verification):** Successfully verified `godoc` MCP tool for concise architecture and API exploration. Updated `context.md` and `GEMINI.md` with usage guidelines.
 
 ### 🧩 Active Components & APIs
 * `opcda`: Core Go package.
@@ -54,3 +54,4 @@
 * **git-mcp (MCP)**: Automated version control.
 * **context7 (MCP)**: Documentation queries for OPC DA/Automation specs.
 * **Go Toolchain**: `go test`, `go fmt`, `go vet`.
+* **godoc (MCP)**: Preferred tool for internal API and architectural exploration. Use `mcp_godoc_get_doc` for concise package/symbol summaries.
