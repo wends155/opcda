@@ -46,6 +46,8 @@ func CoTaskMemFree(pv unsafe.Pointer) {
 	windows.CoTaskMemFree(pv)
 }
 
+// CLSCTX (Class Context) defines the context in which a COM object is created.
+// It determines whether the object runs in the same process, another local process, or on a remote machine.
 type CLSCTX uint32
 
 const (
@@ -73,27 +75,44 @@ type COAUTHIDENTITY struct {
 	Flags uint32
 }
 
+// COAUTHINFO contains authentication settings used while making a remote activation request.
 type COAUTHINFO struct {
-	DwAuthnSvc           uint32
-	DwAuthzSvc           uint32
-	PwszServerPrincName  *uint16
-	DwAuthnLevel         uint32
+	// DwAuthnSvc is the authentication service to be used.
+	DwAuthnSvc uint32
+	// DwAuthzSvc is the authorization service to be used.
+	DwAuthzSvc uint32
+	// PwszServerPrincName is the server principal name to be used with the authentication service.
+	PwszServerPrincName *uint16
+	// DwAuthnLevel is the authentication level to be used.
+	DwAuthnLevel uint32
+	// DwImpersonationLevel is the impersonation level to be used.
 	DwImpersonationLevel uint32
-	PAuthIdentityData    *COAUTHIDENTITY
-	DwCapabilities       uint32
+	// PAuthIdentityData is a pointer to a COAUTHIDENTITY structure that establishes the client identity.
+	PAuthIdentityData *COAUTHIDENTITY
+	// DwCapabilities is a set of flags that indicate the capabilities of this proxy.
+	DwCapabilities uint32
 }
 
+// COSERVERINFO identifies a remote computer resource to the activation functions.
 type COSERVERINFO struct {
+	// DwReserved1 is reserved and must be 0.
 	DwReserved1 uint32
-	PwszName    *uint16
-	PAuthInfo   *COAUTHINFO
+	// PwszName is the name of the computer.
+	PwszName *uint16
+	// PAuthInfo is a pointer to a COAUTHINFO structure to override default security settings.
+	PAuthInfo *COAUTHINFO
+	// DwReserved2 is reserved and must be 0.
 	DwReserved2 uint32
 }
 
+// MULTI_QI is used to request multiple interfaces in a single CoCreateInstanceEx call.
 type MULTI_QI struct {
+	// PIID is a pointer to an interface identifier (IID).
 	PIID *windows.GUID
+	// PItf is a pointer to the requested interface on return.
 	PItf *IUnknown
-	Hr   int32 // long
+	// Hr is the return value of the QueryInterface call for this interface.
+	Hr int32 // long
 }
 
 // CoCreateInstanceEx creates an instance of a specific class on a specific computer.
@@ -283,9 +302,13 @@ func Initialize() error {
 	return InitializeWithConfig(config)
 }
 
+// InitConfig holds the configuration for COM initialization and security.
 type InitConfig struct {
-	AuthLevel    uint32
-	ImpLevel     uint32
+	// AuthLevel is the default authentication level for the process.
+	AuthLevel uint32
+	// ImpLevel is the default impersonation level for the process.
+	ImpLevel uint32
+	// Capabilities are additional security capabilities.
 	Capabilities uint32
 }
 

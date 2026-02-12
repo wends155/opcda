@@ -16,16 +16,22 @@ var IID_IOPCGroupStateMgt = windows.GUID{
 	Data4: [8]byte{0x96, 0x75, 0x00, 0x20, 0xaf, 0xd8, 0xad, 0xb3},
 }
 
+// IOPCGroupStateMgtVtbl is the virtual function table for the IOPCGroupStateMgt interface.
 type IOPCGroupStateMgtVtbl struct {
 	IUnknownVtbl
-	GetState   uintptr
-	SetState   uintptr
-	SetName    uintptr
+	// GetState retrieves the current state of the OPC group.
+	GetState uintptr
+	// SetState modifies the current state of an OPC group.
+	SetState uintptr
+	// SetName sets a new name for the OPC group.
+	SetName uintptr
+	// CloneGroup creates a new OPC group with the same state as the current one.
 	CloneGroup uintptr
 }
 
-// IOPCGroupStateMgt allows clients to manage the state of an OPC group.
+// IOPCGroupStateMgt allows clients to manage the state of an OPC group as defined in the OPC Data Access Custom Interface Standard.
 type IOPCGroupStateMgt struct {
+	// IUnknown is the underlying COM interface.
 	*IUnknown
 }
 

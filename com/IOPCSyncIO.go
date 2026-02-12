@@ -17,15 +17,19 @@ var IID_IOPCSyncIO = windows.GUID{
 	Data4: [8]byte{0x96, 0x75, 0x00, 0x20, 0xaf, 0xd8, 0xad, 0xb3},
 }
 
+// IOPCSyncIOVtbl is the virtual function table for the IOPCSyncIO interface.
 type IOPCSyncIOVtbl struct {
 	IUnknownVtbl
-	Read  uintptr
+	// Read performs a synchronous read of one or more items.
+	Read uintptr
+	// Write performs a synchronous write of one or more items.
 	Write uintptr
 }
 
-// IOPCSyncIO provides synchronous data access to OPC items.
+// IOPCSyncIO provides synchronous data access to OPC items as defined in the OPC Data Access Custom Interface Standard.
 // It allows reading from and writing to items in a group.
 type IOPCSyncIO struct {
+	// IUnknown is the underlying COM interface.
 	*IUnknown
 }
 
@@ -33,20 +37,32 @@ func (sl *IOPCSyncIO) Vtbl() *IOPCSyncIOVtbl {
 	return (*IOPCSyncIOVtbl)(unsafe.Pointer(sl.IUnknown.LpVtbl))
 }
 
+// OPCDATASOURCE defines the source of the data for a read operation.
 type OPCDATASOURCE int32
 
+// TagOPCITEMSTATE contains the state of an item, including value, quality, and timestamp.
 type TagOPCITEMSTATE struct {
-	HClient    uint32
+	// HClient is the client-side handle for the item.
+	HClient uint32
+	// FTimestamp is the time the item was last updated.
 	FTimestamp windows.Filetime
-	WQuality   uint16
-	WReserved  uint16
+	// WQuality is the quality of the item value.
+	WQuality uint16
+	// WReserved is reserved for future use.
+	WReserved uint16
+	// VDataValue is the actual value of the item.
 	VDataValue VARIANT
 }
 
+// ItemState is a Go-friendly version of TagOPCITEMSTATE.
 type ItemState struct {
-	Value        interface{}
-	Quality      uint16
-	Timestamp    time.Time
+	// Value is the value of the item in its native format.
+	Value interface{}
+	// Quality is the quality of the item value.
+	Quality uint16
+	// Timestamp is the time the item was last updated.
+	Timestamp time.Time
+	// ClientHandle is the client-side handle for the item.
 	ClientHandle int32
 }
 

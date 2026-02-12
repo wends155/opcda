@@ -12,17 +12,28 @@ import (
 
 // SafeArray represents an OLE automation array.
 // It is a multidimensional array that carries its own bounds and dimensions.
+// SafeArray represents an OLE automation array.
+// It is a multidimensional array that carries its own bounds and dimensions.
 type SafeArray struct {
-	Dimensions   uint16
+	// Dimensions is the number of dimensions in the array.
+	Dimensions uint16
+	// FeaturesFlag is a set of flags describing the array.
 	FeaturesFlag uint16
+	// ElementsSize is the size of an array element in bytes.
 	ElementsSize uint32
-	LocksAmount  uint32
-	Data         uint32
-	Bounds       [16]byte
+	// LocksAmount is the number of times the array has been locked.
+	LocksAmount uint32
+	// Data is a pointer to the array data.
+	Data uint32
+	// Bounds is a descriptor for each dimension of the array.
+	Bounds [16]byte
 }
 
+// SafeArrayBound represents the bounds of one dimension of a SafeArray.
 type SafeArrayBound struct {
-	Elements   uint32
+	// Elements is the number of elements in the dimension.
+	Elements uint32
+	// LowerBound is the lower bound of the dimension (usually 0 or 1).
 	LowerBound int32
 }
 

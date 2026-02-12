@@ -16,19 +16,27 @@ var IID_IOPCAsyncIO2 = windows.GUID{
 	Data4: [8]byte{0x96, 0x75, 0x00, 0x20, 0xaf, 0xd8, 0xad, 0xb3},
 }
 
+// IOPCAsyncIO2Vtbl is the virtual function table for the IOPCAsyncIO2 interface.
 type IOPCAsyncIO2Vtbl struct {
 	IUnknownVtbl
-	Read      uintptr
-	Write     uintptr
-	Refresh2  uintptr
-	Cancel2   uintptr
+	// Read performs an asynchronous read of one or more items.
+	Read uintptr
+	// Write performs an asynchronous write of one or more items.
+	Write uintptr
+	// Refresh2 triggers an asynchronous refresh for all active items.
+	Refresh2 uintptr
+	// Cancel2 cancels a pending asynchronous transaction.
+	Cancel2 uintptr
+	// SetEnable enables or disables callbacks for the group.
 	SetEnable uintptr
+	// GetEnable retrieves the current callback enablement state.
 	GetEnable uintptr
 }
 
-// IOPCAsyncIO2 provides asynchronous data access to OPC items.
+// IOPCAsyncIO2 provides asynchronous data access to OPC items as defined in the OPC Data Access Custom Interface Standard.
 // It uses connection points for call-backs to the client.
 type IOPCAsyncIO2 struct {
+	// IUnknown is the underlying COM interface.
 	*IUnknown
 }
 

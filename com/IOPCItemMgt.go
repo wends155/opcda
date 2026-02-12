@@ -16,20 +16,29 @@ var IID_IOPCItemMgt = windows.GUID{
 	Data4: [8]byte{0x96, 0x75, 0x00, 0x20, 0xaf, 0xd8, 0xad, 0xb3},
 }
 
+// IOPCItemMgtVtbl is the virtual function table for the IOPCItemMgt interface.
 type IOPCItemMgtVtbl struct {
 	IUnknownVtbl
-	AddItems         uintptr
-	ValidateItems    uintptr
-	RemoveItems      uintptr
-	SetActiveState   uintptr
+	// AddItems adds one or more items to the group.
+	AddItems uintptr
+	// ValidateItems determines if one or more items could be added to the group.
+	ValidateItems uintptr
+	// RemoveItems removes one or more items from the group.
+	RemoveItems uintptr
+	// SetActiveState sets the active state of one or more items.
+	SetActiveState uintptr
+	// SetClientHandles sets the client handles for one or more items.
 	SetClientHandles uintptr
-	SetDatatypes     uintptr
+	// SetDatatypes sets the requested data types for one or more items.
+	SetDatatypes uintptr
+	// CreateEnumerator creates an enumerator for the items in the group.
 	CreateEnumerator uintptr
 }
 
-// IOPCItemMgt is an interface for managing OPC items within a group.
+// IOPCItemMgt is an interface for managing OPC items within a group as defined in the OPC Data Access Custom Interface Standard.
 // It allows adding, removing, and validating items.
 type IOPCItemMgt struct {
+	// IUnknown is the underlying COM interface.
 	*IUnknown
 }
 
@@ -37,31 +46,52 @@ func (sl *IOPCItemMgt) Vtbl() *IOPCItemMgtVtbl {
 	return (*IOPCItemMgtVtbl)(unsafe.Pointer(sl.IUnknown.LpVtbl))
 }
 
+// TagOPCITEMDEF defines the properties of an item to be added to a group.
 type TagOPCITEMDEF struct {
+	// SzAccessPath is the vendor-specific access path.
 	SzAccessPath *uint16
-	SzItemID     *uint16
-	BActive      int32
-	HClient      uint32
-	DwBlobSize   uint32
-	PBlob        *byte
-	VtRequested  uint16
-	WReserved    uint16
+	// SzItemID is the unique identifier for the item.
+	SzItemID *uint16
+	// BActive is whether the item should be active.
+	BActive int32
+	// HClient is the client-side handle for the item.
+	HClient uint32
+	// DwBlobSize is the size of the PBlob in bytes.
+	DwBlobSize uint32
+	// PBlob is a pointer to vendor-specific blob data.
+	PBlob *byte
+	// VtRequested is the requested data type for the item.
+	VtRequested uint16
+	// WReserved is reserved for future use.
+	WReserved uint16
 }
 
+// TagOPCITEMRESULT contains the result of adding or validating an item.
 type TagOPCITEMRESULT struct {
-	HServer        uint32
-	VtCanonical    uint16
-	WReserved      uint16
+	// HServer is the server-side handle for the item.
+	HServer uint32
+	// VtCanonical is the native data type of the item.
+	VtCanonical uint16
+	// WReserved is reserved for future use.
+	WReserved uint16
+	// DwAccessRights identifies the access rights for the item.
 	DwAccessRights uint32
-	DwBlobSize     uint32
-	PBlob          *byte
+	// DwBlobSize is the size of the PBlob in bytes.
+	DwBlobSize uint32
+	// PBlob is a pointer to vendor-specific blob data.
+	PBlob *byte
 }
 
+// TagOPCITEMRESULTStruct is a Go-friendly version of TagOPCITEMRESULT.
 type TagOPCITEMRESULTStruct struct {
-	Server       uint32
-	NativeType   uint16
+	// Server is the server-side handle for the item.
+	Server uint32
+	// NativeType is the native data type of the item.
+	NativeType uint16
+	// AccessRights identifies the access rights for the item.
 	AccessRights uint32
-	Blob         []byte
+	// Blob is the vendor-specific blob data.
+	Blob []byte
 }
 
 func (result *TagOPCITEMRESULT) CloneToStruct() TagOPCITEMRESULTStruct {

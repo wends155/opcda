@@ -16,19 +16,26 @@ var IID_IOPCCommon = windows.GUID{
 	Data4: [8]byte{0xB2, 0xD8, 0x00, 0x60, 0x08, 0x3B, 0xA1, 0xFB},
 }
 
-// IOPCCommon is an interface common to all OPC server objects.
+// IOPCCommon is an interface common to all OPC server objects as defined in the OPC Data Access Custom Interface Standard.
 // It provides methods for locale management and error string retrieval.
 type IOPCCommon struct {
+	// IUnknown is the underlying COM interface.
 	*IUnknown
 }
 
+// IOPCCommonVtbl is the virtual function table for the IOPCCommon interface.
 type IOPCCommonVtbl struct {
 	IUnknownVtbl
-	SetLocaleID             uintptr
-	GetLocaleID             uintptr
+	// SetLocaleID sets the locale ID for the current session.
+	SetLocaleID uintptr
+	// GetLocaleID retrieves the current locale ID for the session.
+	GetLocaleID uintptr
+	// QueryAvailableLocaleIDs returns a list of locale IDs supported by the server.
 	QueryAvailableLocaleIDs uintptr
-	GetErrorString          uintptr
-	SetClientName           uintptr
+	// GetErrorString retrieves a human-readable error string for a given error code.
+	GetErrorString uintptr
+	// SetClientName allows the client to register its name with the server.
+	SetClientName uintptr
 }
 
 func (v *IOPCCommon) Vtbl() *IOPCCommonVtbl {

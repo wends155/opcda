@@ -17,19 +17,27 @@ var IID_IOPCServer = windows.GUID{
 	Data4: [8]byte{0x96, 0x75, 0x00, 0x20, 0xaf, 0xd8, 0xad, 0xb3},
 }
 
-// IOPCServer is the main interface for an OPC server.
+// IOPCServer is the main interface for an OPC server as defined in the OPC Data Access Custom Interface Standard.
 // It provides methods to manage groups, query status, and remove groups.
 type IOPCServer struct {
+	// IUnknown is the underlying COM interface.
 	*IUnknown
 }
 
+// IOPCServerVtbl is the virtual function table for the IOPCServer interface.
 type IOPCServerVtbl struct {
 	IUnknownVtbl
-	AddGroup              uintptr
-	GetErrorString        uintptr
-	GetGroupByName        uintptr
-	GetStatus             uintptr
-	RemoveGroup           uintptr
+	// AddGroup adds a new OPC group to the server.
+	AddGroup uintptr
+	// GetErrorString retrieves the error string for a server-specific error code.
+	GetErrorString uintptr
+	// GetGroupByName retrieves a pointer to an existing group by its name.
+	GetGroupByName uintptr
+	// GetStatus retrieves the current status of the server.
+	GetStatus uintptr
+	// RemoveGroup removes a group from the server.
+	RemoveGroup uintptr
+	// CreateGroupEnumerator creates an enumerator for the groups owned by the server.
 	CreateGroupEnumerator uintptr
 }
 
@@ -99,34 +107,59 @@ func BoolToComBOOL(b bool) int32 {
 	return 0
 }
 
+// OPCServerState represents the current state of the OPC server.
 type OPCServerState uint32
 
+// OPCSERVERSTATUS contains the current status, version information, and vendor data of an OPC server.
 type OPCSERVERSTATUS struct {
-	FtStartTime      windows.Filetime
-	FtCurrentTime    windows.Filetime
+	// FtStartTime is the time the server started.
+	FtStartTime windows.Filetime
+	// FtCurrentTime is the current time as seen by the server.
+	FtCurrentTime windows.Filetime
+	// FtLastUpdateTime is the last time the server was updated.
 	FtLastUpdateTime windows.Filetime
-	DwServerState    OPCServerState
-	DwGroupCount     uint32
-	DwBandWidth      uint32
-	WMajorVersion    uint16
-	WMinorVersion    uint16
-	WBuildNumber     uint16
-	WReserved        uint16
-	SzVendorInfo     *uint16
+	// DwServerState is the current state of the server.
+	DwServerState OPCServerState
+	// DwGroupCount is the number of groups currently defined in the server.
+	DwGroupCount uint32
+	// DwBandWidth is a measure of the server's current bandwidth usage.
+	DwBandWidth uint32
+	// WMajorVersion is the major version number of the server.
+	WMajorVersion uint16
+	// WMinorVersion is the minor version number of the server.
+	WMinorVersion uint16
+	// WBuildNumber is the build number of the server.
+	WBuildNumber uint16
+	// WReserved is reserved for future use.
+	WReserved uint16
+	// SzVendorInfo is a string containing vendor-specific information.
+	SzVendorInfo *uint16
 }
 
+// ServerStatus is a Go-friendly version of OPCSERVERSTATUS.
 type ServerStatus struct {
-	StartTime      time.Time
-	CurrentTime    time.Time
+	// StartTime is the time the server started.
+	StartTime time.Time
+	// CurrentTime is the current time as seen by the server.
+	CurrentTime time.Time
+	// LastUpdateTime is the last time the server was updated.
 	LastUpdateTime time.Time
-	ServerState    OPCServerState
-	GroupCount     uint32
-	BandWidth      uint32
-	MajorVersion   uint16
-	MinorVersion   uint16
-	BuildNumber    uint16
-	Reserved       uint16
-	VendorInfo     string
+	// ServerState is the current state of the server.
+	ServerState OPCServerState
+	// GroupCount is the number of groups currently defined in the server.
+	GroupCount uint32
+	// BandWidth is a measure of the server's current bandwidth usage.
+	BandWidth uint32
+	// MajorVersion is the major version number of the server.
+	MajorVersion uint16
+	// MinorVersion is the minor version number of the server.
+	MinorVersion uint16
+	// BuildNumber is the build number of the server.
+	BuildNumber uint16
+	// Reserved is reserved for future use.
+	Reserved uint16
+	// VendorInfo is a string containing vendor-specific information.
+	VendorInfo string
 }
 
 // GetStatus retrieves the current status of the OPC server.

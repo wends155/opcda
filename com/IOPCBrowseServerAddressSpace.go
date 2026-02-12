@@ -16,24 +16,32 @@ var IID_IOPCBrowseServerAddressSpace = windows.GUID{
 	Data4: [8]byte{0x96, 0x75, 0x00, 0x20, 0xaf, 0xd8, 0xad, 0xb3},
 }
 
-// IOPCBrowseServerAddressSpace provides methods to browse the server's address space.
+// IOPCBrowseServerAddressSpace provides methods to browse the server's address space as defined in the OPC Data Access Custom Interface Standard.
 type IOPCBrowseServerAddressSpace struct {
+	// IUnknown is the underlying COM interface.
 	*IUnknown
 }
 
+// IOPCBrowseServerAddressSpaceVtbl is the virtual function table for the IOPCBrowseServerAddressSpace interface.
 type IOPCBrowseServerAddressSpaceVtbl struct {
 	IUnknownVtbl
-	QueryOrganization    uintptr
+	// QueryOrganization retrieves the organization of the server's address space (hierarchical or flat).
+	QueryOrganization uintptr
+	// ChangeBrowsePosition changes the current browse position in the address space.
 	ChangeBrowsePosition uintptr
-	BrowseOPCItemIDs     uintptr
-	GetItemID            uintptr
-	BrowseAccessPaths    uintptr
+	// BrowseOPCItemIDs returns a list of item IDs based on the current browse position and filters.
+	BrowseOPCItemIDs uintptr
+	// GetItemID retrieves the full item ID for a given browser item name.
+	GetItemID uintptr
+	// BrowseAccessPaths returns a list of access paths for a given item ID.
+	BrowseAccessPaths uintptr
 }
 
 func (v *IOPCBrowseServerAddressSpace) Vtbl() *IOPCBrowseServerAddressSpaceVtbl {
 	return (*IOPCBrowseServerAddressSpaceVtbl)(unsafe.Pointer(v.IUnknown.LpVtbl))
 }
 
+// OPCNAMESPACETYPE represents the organization of the server's address space.
 type OPCNAMESPACETYPE uint32
 
 // QueryOrganization retrieves the organization of the server's address space (hierarchical or flat).
@@ -53,6 +61,7 @@ func (v *IOPCBrowseServerAddressSpace) QueryOrganization() (pNameSpaceType OPCNA
 	return
 }
 
+// OPCBROWSEDIRECTION represents the direction to change the browse position.
 type OPCBROWSEDIRECTION uint32
 
 // ChangeBrowsePosition changes the current browse position in the address space.
@@ -79,6 +88,7 @@ func (v *IOPCBrowseServerAddressSpace) ChangeBrowsePosition(dwBrowseDirection OP
 	return
 }
 
+// OPCBROWSETYPE represents the type of items to browse.
 type OPCBROWSETYPE uint32
 
 // BrowseOPCItemIDs returns a list of item IDs based on the current browse position and filters.

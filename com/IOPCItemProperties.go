@@ -16,16 +16,21 @@ var IID_IOPCItemProperties = windows.GUID{
 	Data4: [8]byte{0x96, 0x75, 0x00, 0x20, 0xaf, 0xd8, 0xad, 0xb3},
 }
 
-// IOPCItemProperties allows clients to query the properties of an OPC item.
+// IOPCItemProperties allows clients to query the properties of an OPC item as defined in the OPC Data Access Custom Interface Standard.
 type IOPCItemProperties struct {
+	// IUnknown is the underlying COM interface.
 	*IUnknown
 }
 
+// IOPCItemPropertiesVtbl is the virtual function table for the IOPCItemProperties interface.
 type IOPCItemPropertiesVtbl struct {
 	IUnknownVtbl
+	// QueryAvailableProperties returns a list of properties available for the specified item.
 	QueryAvailableProperties uintptr
-	GetItemProperties        uintptr
-	LookupItemIDs            uintptr
+	// GetItemProperties retrieves the current values for one or more properties of an item.
+	GetItemProperties uintptr
+	// LookupItemIDs provides the ItemIDs for one or more properties of an item.
+	LookupItemIDs uintptr
 }
 
 func (v *IOPCItemProperties) Vtbl() *IOPCItemPropertiesVtbl {

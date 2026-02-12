@@ -16,8 +16,9 @@ var IID_IOPCServerList2 = windows.GUID{
 	Data4: [8]byte{0x83, 0x05, 0x48, 0x7F, 0x31, 0x88, 0xBF, 0x7A},
 }
 
-// IOPCServerList2 is an updated version of IOPCServerList providing additional details.
+// IOPCServerList2 is an updated version of IOPCServerList providing additional details, as defined in the OPC Data Access Custom Interface Standard.
 type IOPCServerList2 struct {
+	// IUnknown is the underlying COM interface.
 	*IUnknown
 }
 

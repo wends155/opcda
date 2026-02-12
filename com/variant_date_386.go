@@ -47,6 +47,7 @@ func GetVariantDate(value uint64) (time.Time, error) {
 	return time.Now(), errors.New("Could not convert to time, passing current time.")
 }
 
+// TimeToVariantDate converts a Go time.Time to a COM Variant Time value.
 func TimeToVariantDate(t time.Time) (uint64, error) {
 	var st syscall.Systemtime
 	st.Year = uint16(t.Year())

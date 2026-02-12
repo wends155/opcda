@@ -2,6 +2,7 @@
 
 package com
 
+// VT (Variant Type) represents the data type of the value stored in a VARIANT.
 type VT uint16
 
 const (

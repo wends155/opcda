@@ -39,6 +39,7 @@
 3.  **2026-02-12 (Documentation/COM):** Improved `com` package documentation to adhere to `go doc` standards. Added runnable examples in `example_test.go` and created a comprehensive source map in `com_source_map.md`.
 4.  **2026-02-12 (Nil-Safety & Error Handling):** Implemented comprehensive nil-safety across the `opcda` package. Refactored `VARIANT.Value()` to return `(interface{}, error)` and replaced all internal `panic` calls with proper error propagation. Added a regression test suite in `opcda_error_test.go`.
 5.  **2026-02-12 (Unsafe Audit):** Completed a comprehensive security audit of `unsafe` usage in the `com` package. Verified Vtble orders, struct alignments, and memory handling. Refactored syscall patterns to satisfy `go vet` where possible and ensure strict pointer safety. Audited remaining warnings as low-risk COM interop patterns.
+6.  **2026-02-12 (COM Documentation):** Completed package-wide documentation of the `com` package. Added `go doc` compliant comments to all structs, interfaces, and virtual tables. Included usage examples for core methods to enhance discoverability.
 
 ### 🧩 Active Components & APIs
 * `opcda`: Core Go package.

@@ -23,15 +23,20 @@ var IID_IOPCServerList = windows.GUID{
 	Data4: [8]byte{0xA4, 0x94, 0x3C, 0xB3, 0x06, 0xC1, 0x00, 0x00},
 }
 
+// IOPCServerListVtbl is the virtual function table for the IOPCServerList interface.
 type IOPCServerListVtbl struct {
 	IUnknownVtbl
+	// EnumClassesOfCategories enumerates OPC servers belonging to specified categories.
 	EnumClassesOfCategories uintptr
-	GetClassDetails         uintptr
-	CLSIDFromProgID         uintptr
+	// GetClassDetails retrieves ProgID and UserType for a given CLSID.
+	GetClassDetails uintptr
+	// CLSIDFromProgID retrieves the CLSID for a given ProgID.
+	CLSIDFromProgID uintptr
 }
 
-// IOPCServerList provides methods to enumerate and find OPC servers.
+// IOPCServerList provides methods to enumerate and find OPC servers as defined in the OPC Data Access Custom Interface Standard.
 type IOPCServerList struct {
+	// IUnknown is the underlying COM interface.
 	*IUnknown
 }
 

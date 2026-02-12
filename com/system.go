@@ -1,4 +1,5 @@
 //go:build windows
+
 package com
 
 import (
@@ -8,16 +9,24 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// IConnectionPointVtbl is the virtual function table for the IConnectionPoint interface.
 type IConnectionPointVtbl struct {
 	IUnknownVtbl
-	GetConnectionInterface      uintptr
+	// GetConnectionInterface retrieves the IID of the outgoing interface managed by this connection point.
+	GetConnectionInterface uintptr
+	// GetConnectionPointContainer retrieves the IConnectionPointContainer object that conceptually owns this connection point.
 	GetConnectionPointContainer uintptr
-	Advise                      uintptr
-	Unadvise                    uintptr
-	EnumConnections             uintptr
+	// Advise establishes a connection between the connection point object and the client's sink object.
+	Advise uintptr
+	// Unadvise terminates an advisory connection previously established through Advise.
+	Unadvise uintptr
+	// EnumConnections creates an enumerator object to iterate through the current connections for this connection point.
+	EnumConnections uintptr
 }
 
+// IConnectionPoint supports connection points for outgoing interfaces (events/callbacks).
 type IConnectionPoint struct {
+	// IUnknown is the underlying COM interface.
 	*IUnknown
 }
 
@@ -49,13 +58,18 @@ var IID_IConnectionPointContainer = windows.GUID{
 	Data4: [8]byte{0xB6, 0x9C, 0x00, 0xAA, 0x00, 0x34, 0x1D, 0x07},
 }
 
+// IConnectionPointContainerVtbl is the virtual function table for the IConnectionPointContainer interface.
 type IConnectionPointContainerVtbl struct {
 	IUnknownVtbl
+	// EnumConnectionPoints creates an enumerator object to iterate through all the connection points supported in the connectable object.
 	EnumConnectionPoints uintptr
-	FindConnectionPoint  uintptr
+	// FindConnectionPoint returns a pointer to the IConnectionPoint interface for a specific IID.
+	FindConnectionPoint uintptr
 }
 
+// IConnectionPointContainer indicates that an object is connectable and provides access to its connection points.
 type IConnectionPointContainer struct {
+	// IUnknown is the underlying COM interface.
 	*IUnknown
 }
 

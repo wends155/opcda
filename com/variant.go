@@ -85,9 +85,13 @@ func (v *VARIANT) Value() (interface{}, error) {
 
 // VariantWrapper wraps a VARIANT and provides helper methods for setting and clearing values.
 // It is particularly useful when you need to manage the lifecycle of BSTRs or other resources.
+// VariantWrapper wraps a VARIANT and provides helper methods for setting and clearing values.
+// It is particularly useful when you need to manage the lifecycle of BSTRs or other resources.
 type VariantWrapper struct {
+	// Variant is the underlying VARIANT structure.
 	Variant *VARIANT
-	str     []*uint16
+	// str is a slice of BSTR pointers that must be freed when the variant is cleared.
+	str []*uint16
 }
 
 // NewVariant creates a new VariantWrapper and initializes it with the given value.
