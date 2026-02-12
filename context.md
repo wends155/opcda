@@ -5,7 +5,7 @@
 ---
 
 ## 🏗️ System Overview
-* **Goal:** Standalone Go-based OPC DA client library (migrated to `wends155/opcda`).
+* **Goal:** Standalone Native Go-based OPC DA client library. This is the overarching objective of the project.
 * **Core Stack:** Go 1.20+, `golang.org/x/sys/windows` (COM/OLE).
 * **Architecture Pattern:** Go wrapper around OPC DA Automation interfaces, providing an idiomatic Go API for industrial data access. See [architecture.md](file:///c:/Users/WSALIGAN/code/opcda/architecture.md) for deep technical details and [com_source_map.md](file:///c:/Users/WSALIGAN/code/opcda/com/com_source_map.md) for an overview of the low-level communication package.
 
