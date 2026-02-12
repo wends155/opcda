@@ -5,7 +5,7 @@
 ---
 
 ## 🏗️ System Overview
-* **Goal:** Go-based OPC (OLE for Process Control) DA client toolkit.
+* **Goal:** Standalone Go-based OPC DA client library (migrated to `wends155/opcda`).
 * **Core Stack:** Go 1.20+, `golang.org/x/sys/windows` (COM/OLE).
 * **Architecture Pattern:** Go wrapper around OPC DA Automation interfaces, providing an idiomatic Go API for industrial data access. See [architecture.md](file:///c:/Users/WSALIGAN/code/opcda/architecture.md) for deep technical details.
 
@@ -26,9 +26,9 @@
 *This section is updated by the Architect after every successful implementation.*
 
 ### 🛠️ Recent Changes (Last 3 Cycles)
-1.  **2026-02-12 (Project Init):** Configured project root to `c:\Users\WSALIGAN\code\opcda`.
-2.  **2026-02-12 (Documentation Overhaul):** Corrected documentation to reflect Go implementation. Created `architecture.md` with deep dependency, API, and FFI mapping (Vtbl/SyscallN).
-3.  **2026-02-12 (Tool Verification):** Successfully verified `godoc` MCP tool for concise architecture and API exploration. Updated `context.md` and `GEMINI.md` with usage guidelines.
+1.  **2026-02-12 (Migration):** Successfully migrated library to `github.com/wends155/opcda`. Renamed module project-wide and updated all imports.
+2.  **2026-02-12 (CI Infrastructure):** Mirrored simulation assets to [simulation-assets](https://github.com/wends155/opcda/releases/tag/simulation-assets) and updated `test.yaml` for independent CI.
+3.  **2026-02-12 (Platform Constraints):** Added explicit `//go:build windows` constraints across all core packages.
 
 ### 🧩 Active Components & APIs
 * `opcda`: Core Go package.
