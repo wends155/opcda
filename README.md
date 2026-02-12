@@ -115,3 +115,22 @@ All APIs can be found in the [API documentation](https://pkg.go.dev/github.com/w
 3. Memory leaks
 
    This client uses COM interfaces, and memory release has been handled internally, with fatigue testing done for all supported types. All public methods are guarded with defensive nil-checks to return errors gracefully instead of panicking on uninitialized objects.
+
+## Testing
+
+This project uses a combination of mock-based unit tests and server-dependent integration tests.
+
+### Unit Tests (Mocks)
+The core library, including the `OPCBrowser`, is refactored to support Dependency Injection. Unit tests use mocks and can be run without an OPC server:
+```shell
+go test -v ./...
+```
+
+### Integration Tests
+Tests that require a live OPC server (e.g., Matrikon Simulation Server) are protected by build tags. To run these tests:
+```shell
+go test -v -tags matrikon ./...
+```
+
+### Documentation Examples
+Go `Example` functions are provided in the test files. They serve as runnable documentation and can be viewed via `godoc`.
