@@ -34,7 +34,9 @@
 ### Global Dependency Injection & Mocking (2026-02-12)
 
 - **Change**: Refactored core components (`OPCServer`, `OPCGroup`, `OPCItems`, `OPCItem`, `OPCBrowser`) to use internal provider interfaces (`serverProvider`, `groupProvider`, `itemMgtProvider`). 
-- **Impact**: Decoupled high-level Go logic from physical COM implementations. Enabled pure unit testing with mocks in `*_test.go` and migrated live server tests to `*_integration_test.go`.
+- **Impact**: Decoupled high-level Go logic from physical COM implementations. Enabled pure unit testing with mocks in `*_test.go`.
+- **Test Isolation**: Implemented `//go:build integration` tags to separate server-dependent tests from unit tests. 
+- **Automation**: Introduced a `Makefile` with `test` and `integration` targets for standardized test execution.
 - **Registry Fix**: Resolved "Access is denied" when connecting to local servers by using local `registry.CLASSES_ROOT` instead of `OpenRemoteKey("localhost", ...)`.
 - **Benefit**: CI/CD can now verify core logic without requiring initialized Windows COM or specialized OPC simulators.
 
@@ -70,6 +72,7 @@
 * **git-mcp (MCP)**: Automated version control.
 * **context7 (MCP)**: Documentation queries for OPC DA/Automation specs.
 * **Go Toolchain**: `go test`, `go fmt`, `go vet`.
+* **Makefile**: Root-level `Makefile` for streamlined testing (`make test`, `make integration`).
 * **godoc (MCP)**: Preferred tool for internal API and architectural exploration. Use `mcp_godoc_get_doc` for concise package/symbol summaries.
 
 ---

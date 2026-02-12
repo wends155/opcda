@@ -120,19 +120,22 @@ All APIs can be found in the [API documentation](https://pkg.go.dev/github.com/w
 
 ## Testing
 
-This project uses a combination of mock-based unit tests and server-dependent integration tests.
+This project uses a combination of mock-based unit tests and server-dependent integration tests. A `Makefile` is provided for convenience.
 
 ### Unit Tests (Mocks)
-Pure unit tests that use mock providers to simulate OPC server behavior. These tests are fast and do not require any COM initialization or external simulators.
+Pure unit tests that use mock providers to simulate OPC server behavior. These tests are fast, environment-agnostic, and do not require any COM initialization.
 ```shell
-go test -v .
+make test
+# OR
+go test -v ./...
 ```
 
 ### Integration Tests
-Tests that interact with live OPC servers or the local Windows registry. These are isolated in `*_integration_test.go` files. Some may require specialized software like the Matrikon OPC Simulation Server.
+Tests that interact with live OPC servers or the local Windows registry. These are isolated using the `integration` build tag.
 ```shell
-# Run all tests (including integration if environment allows)
-go test -v ./...
+make integration
+# OR
+go test -v -tags integration ./...
 ```
 
 ### Documentation Examples
