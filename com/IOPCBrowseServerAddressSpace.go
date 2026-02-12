@@ -1,4 +1,5 @@
 //go:build windows
+
 package com
 
 import (
@@ -15,6 +16,7 @@ var IID_IOPCBrowseServerAddressSpace = windows.GUID{
 	Data4: [8]byte{0x96, 0x75, 0x00, 0x20, 0xaf, 0xd8, 0xad, 0xb3},
 }
 
+// IOPCBrowseServerAddressSpace provides methods to browse the server's address space.
 type IOPCBrowseServerAddressSpace struct {
 	*IUnknown
 }
@@ -34,6 +36,11 @@ func (v *IOPCBrowseServerAddressSpace) Vtbl() *IOPCBrowseServerAddressSpaceVtbl 
 
 type OPCNAMESPACETYPE uint32
 
+// QueryOrganization retrieves the organization of the server's address space (hierarchical or flat).
+//
+// Example:
+//
+//	org, err := browse.QueryOrganization()
 func (v *IOPCBrowseServerAddressSpace) QueryOrganization() (pNameSpaceType OPCNAMESPACETYPE, err error) {
 	r0, _, _ := syscall.SyscallN(
 		v.Vtbl().QueryOrganization,
@@ -48,6 +55,11 @@ func (v *IOPCBrowseServerAddressSpace) QueryOrganization() (pNameSpaceType OPCNA
 
 type OPCBROWSEDIRECTION uint32
 
+// ChangeBrowsePosition changes the current browse position in the address space.
+//
+// Example:
+//
+//	err := browse.ChangeBrowsePosition(com.OPC_BROWSE_DOWN, "Folder1")
 func (v *IOPCBrowseServerAddressSpace) ChangeBrowsePosition(dwBrowseDirection OPCBROWSEDIRECTION, szString string) (err error) {
 	var pName *uint16
 	pName, err = syscall.UTF16PtrFromString(szString)
@@ -69,6 +81,18 @@ func (v *IOPCBrowseServerAddressSpace) ChangeBrowsePosition(dwBrowseDirection OP
 
 type OPCBROWSETYPE uint32
 
+// BrowseOPCItemIDs returns a list of item IDs based on the current browse position and filters.
+//
+// Parameters:
+//
+//	dwBrowseFilterType: The type of items to browse (branches, leaves, or both).
+//	szFilterCriteria: A filter string (e.g., "*").
+//	vtDataTypeFilter: An optional data type filter.
+//	dwAccessRightsFilter: An optional access rights filter.
+//
+// Example:
+//
+//	items, err := browse.BrowseOPCItemIDs(com.OPC_LEAF, "*", 0, 0)
 func (v *IOPCBrowseServerAddressSpace) BrowseOPCItemIDs(dwBrowseFilterType OPCBROWSETYPE, szFilterCriteria string, vtDataTypeFilter uint16, dwAccessRightsFilter uint32) (result []string, err error) {
 	var pString *IUnknown
 	var pName *uint16
@@ -110,6 +134,11 @@ func (v *IOPCBrowseServerAddressSpace) BrowseOPCItemIDs(dwBrowseFilterType OPCBR
 	return result, nil
 }
 
+// GetItemID retrieves the full item ID for a given browser item name.
+//
+// Example:
+//
+//	itemID, err := browse.GetItemID("Item1")
 func (v *IOPCBrowseServerAddressSpace) GetItemID(szItemDataID string) (szItemID string, err error) {
 	var pString *uint16
 	var pName *uint16

@@ -1,4 +1,5 @@
 //go:build windows
+
 package com
 
 import (
@@ -25,6 +26,8 @@ type IOPCAsyncIO2Vtbl struct {
 	GetEnable uintptr
 }
 
+// IOPCAsyncIO2 provides asynchronous data access to OPC items.
+// It uses connection points for call-backs to the client.
 type IOPCAsyncIO2 struct {
 	*IUnknown
 }
@@ -33,13 +36,22 @@ func (sl *IOPCAsyncIO2) Vtbl() *IOPCAsyncIO2Vtbl {
 	return (*IOPCAsyncIO2Vtbl)(unsafe.Pointer(sl.IUnknown.LpVtbl))
 }
 
-//        virtual HRESULT STDMETHODCALLTYPE Read(
-//            /* [in] */ DWORD dwCount,
-//            /* [size_is][in] */ OPCHANDLE * phServer,
-//            /* [in] */ DWORD dwTransactionID,
-//            /* [out] */ DWORD * pdwCancelID,
-//            /* [size_is][size_is][out] */ HRESULT * *ppErrors) = 0;
-
+// Read performs an asynchronous read of one or more items in the group.
+// The results are returned via the IOPCDataCallback interface.
+//
+// Parameters:
+//
+//	phServer: Server handles of the items to read.
+//	dwTransactionID: A client-generated transaction ID.
+//
+// Returns:
+//
+//	pdwCancelID: A cancel ID that can be used to cancel the read.
+//	ppErrors: A slice of HRESULTs for each item.
+//
+// Example:
+//
+//	cancelID, errors, err := asyncIO.Read(serverHandles, 123)
 func (sl *IOPCAsyncIO2) Read(phServer []uint32, dwTransactionID uint32) (pdwCancelID uint32, ppErrors []int32, err error) {
 	var pErrors unsafe.Pointer
 	r0, _, _ := syscall.SyscallN(
@@ -67,14 +79,11 @@ func (sl *IOPCAsyncIO2) Read(phServer []uint32, dwTransactionID uint32) (pdwCanc
 	return
 }
 
-//        virtual HRESULT STDMETHODCALLTYPE Write(
-//            /* [in] */ DWORD dwCount,
-//            /* [size_is][in] */ OPCHANDLE * phServer,
-//            /* [size_is][in] */ VARIANT * pItemValues,
-//            /* [in] */ DWORD dwTransactionID,
-//            /* [out] */ DWORD * pdwCancelID,
-//            /* [size_is][size_is][out] */ HRESULT * *ppErrors) = 0;
-
+// Write performs an asynchronous write of one or more items in the group.
+//
+// Example:
+//
+//	cancelID, errors, err := asyncIO.Write(serverHandles, variants, 456)
 func (sl *IOPCAsyncIO2) Write(phServer []uint32, pItemValues []VARIANT, dwTransactionID uint32) (pdwCancelID uint32, ppErrors []int32, err error) {
 	var pErrors unsafe.Pointer
 	r0, _, _ := syscall.SyscallN(
@@ -103,11 +112,11 @@ func (sl *IOPCAsyncIO2) Write(phServer []uint32, pItemValues []VARIANT, dwTransa
 	return
 }
 
-//        virtual HRESULT STDMETHODCALLTYPE Refresh2(
-//            /* [in] */ OPCDATASOURCE dwSource,
-//            /* [in] */ DWORD dwTransactionID,
-//            /* [out] */ DWORD * pdwCancelID) = 0;
-
+// Refresh2 triggers a refresh of all active items in the group.
+//
+// Example:
+//
+//	cancelID, err := asyncIO.Refresh2(com.OPC_DS_DEVICE, 789)
 func (sl *IOPCAsyncIO2) Refresh2(dwSource OPCDATASOURCE, dwTransactionID uint32) (pdwCancelID uint32, err error) {
 	r0, _, _ := syscall.SyscallN(
 		sl.Vtbl().Refresh2,
@@ -122,9 +131,11 @@ func (sl *IOPCAsyncIO2) Refresh2(dwSource OPCDATASOURCE, dwTransactionID uint32)
 	return
 }
 
-//        virtual HRESULT STDMETHODCALLTYPE Cancel2(
-//            /* [in] */ DWORD dwCancelID) = 0;
-
+// Cancel2 attempts to cancel an ongoing asynchronous transaction.
+//
+// Example:
+//
+//	err := asyncIO.Cancel2(cancelID)
 func (sl *IOPCAsyncIO2) Cancel2(dwCancelID uint32) (err error) {
 	r0, _, _ := syscall.SyscallN(
 		sl.Vtbl().Cancel2,

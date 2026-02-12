@@ -1,4 +1,5 @@
 //go:build windows
+
 package com
 
 import (
@@ -9,6 +10,8 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// SafeArray represents an OLE automation array.
+// It is a multidimensional array that carries its own bounds and dimensions.
 type SafeArray struct {
 	Dimensions   uint16
 	FeaturesFlag uint16
@@ -23,6 +26,16 @@ type SafeArrayBound struct {
 	LowerBound int32
 }
 
+// ToValueArray converts the SafeArray to a Go slice of values.
+// It handles various VT types and returns an interface{} containing the resulting slice.
+//
+// Example:
+//
+//	slice, err := sa.ToValueArray()
+//	if err == nil {
+//	  fmt.Println(slice.([]float32))
+//	}
+//
 //gocyclo:ignore
 func (s *SafeArray) ToValueArray() (interface{}, error) {
 	var err error

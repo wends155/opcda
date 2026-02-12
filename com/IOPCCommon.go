@@ -1,4 +1,5 @@
 //go:build windows
+
 package com
 
 import (
@@ -15,6 +16,8 @@ var IID_IOPCCommon = windows.GUID{
 	Data4: [8]byte{0xB2, 0xD8, 0x00, 0x60, 0x08, 0x3B, 0xA1, 0xFB},
 }
 
+// IOPCCommon is an interface common to all OPC server objects.
+// It provides methods for locale management and error string retrieval.
 type IOPCCommon struct {
 	*IUnknown
 }
@@ -32,6 +35,11 @@ func (v *IOPCCommon) Vtbl() *IOPCCommonVtbl {
 	return (*IOPCCommonVtbl)(unsafe.Pointer(v.IUnknown.LpVtbl))
 }
 
+// SetLocaleID sets the locale ID for the current session.
+//
+// Example:
+//
+//	err := common.SetLocaleID(0x800)
 func (v *IOPCCommon) SetLocaleID(dwLcid uint32) (err error) {
 	r0, _, _ := syscall.SyscallN(
 		v.Vtbl().SetLocaleID,
@@ -43,6 +51,11 @@ func (v *IOPCCommon) SetLocaleID(dwLcid uint32) (err error) {
 	return
 }
 
+// GetLocaleID retrieves the current locale ID for the session.
+//
+// Example:
+//
+//	lcid, err := common.GetLocaleID()
 func (v *IOPCCommon) GetLocaleID() (pdwLcid uint32, err error) {
 	r0, _, _ := syscall.SyscallN(
 		v.Vtbl().GetLocaleID,
@@ -54,6 +67,11 @@ func (v *IOPCCommon) GetLocaleID() (pdwLcid uint32, err error) {
 	return
 }
 
+// QueryAvailableLocaleIDs returns a list of locale IDs supported by the server.
+//
+// Example:
+//
+//	lcids, err := common.QueryAvailableLocaleIDs()
 func (v *IOPCCommon) QueryAvailableLocaleIDs() (result []uint32, err error) {
 	var pLcid unsafe.Pointer
 	var pdwCount uint32
@@ -79,6 +97,11 @@ func (v *IOPCCommon) QueryAvailableLocaleIDs() (result []uint32, err error) {
 	return
 }
 
+// GetErrorString retrieves a human-readable error string for a given HRESULT.
+//
+// Example:
+//
+//	msg, err := common.GetErrorString(0x80040154)
 func (v *IOPCCommon) GetErrorString(dwError uint32) (str string, err error) {
 	var pString *uint16
 	r0, _, _ := syscall.SyscallN(
@@ -98,6 +121,11 @@ func (v *IOPCCommon) GetErrorString(dwError uint32) (str string, err error) {
 	return
 }
 
+// SetClientName allows the client to register its name with the server.
+//
+// Example:
+//
+//	err := common.SetClientName("MyOPCClient")
 func (v *IOPCCommon) SetClientName(szName string) (err error) {
 	var pName *uint16
 	pName, err = syscall.UTF16PtrFromString(szName)

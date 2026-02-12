@@ -1,4 +1,5 @@
 //go:build windows
+
 package com
 
 import (
@@ -22,6 +23,8 @@ type IOPCSyncIOVtbl struct {
 	Write uintptr
 }
 
+// IOPCSyncIO provides synchronous data access to OPC items.
+// It allows reading from and writing to items in a group.
 type IOPCSyncIO struct {
 	*IUnknown
 }
@@ -47,6 +50,16 @@ type ItemState struct {
 	ClientHandle int32
 }
 
+// Read performs a synchronous read of one or more items in the group.
+//
+// Parameters:
+//
+//	source: The data source (OPC_DS_CACHE or OPC_DS_DEVICE).
+//	serverHandles: Server handles of the items to read.
+//
+// Example:
+//
+//	states, errors, err := syncIO.Read(com.OPC_DS_CACHE, serverHandles)
 func (sl *IOPCSyncIO) Read(source OPCDATASOURCE, serverHandles []uint32) ([]*ItemState, []int32, error) {
 	var pErrors unsafe.Pointer
 	var pValues unsafe.Pointer
@@ -86,6 +99,16 @@ func (sl *IOPCSyncIO) Read(source OPCDATASOURCE, serverHandles []uint32) ([]*Ite
 	return returnValues, errors, nil
 }
 
+// Write performs a synchronous write of one or more items in the group.
+//
+// Parameters:
+//
+//	serverHandles: Server handles of the items to write.
+//	values: A slice of VARIANTs containing the values to write.
+//
+// Example:
+//
+//	errors, err := syncIO.Write(serverHandles, variants)
 func (sl *IOPCSyncIO) Write(serverHandles []uint32, values []VARIANT) ([]int32, error) {
 	var pErrors unsafe.Pointer
 	count := len(serverHandles)

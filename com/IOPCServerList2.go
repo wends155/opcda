@@ -1,4 +1,5 @@
 //go:build windows
+
 package com
 
 import (
@@ -15,6 +16,7 @@ var IID_IOPCServerList2 = windows.GUID{
 	Data4: [8]byte{0x83, 0x05, 0x48, 0x7F, 0x31, 0x88, 0xBF, 0x7A},
 }
 
+// IOPCServerList2 is an updated version of IOPCServerList providing additional details.
 type IOPCServerList2 struct {
 	*IUnknown
 }
@@ -23,6 +25,11 @@ func (sl *IOPCServerList2) Vtbl() *IOPCServerListVtbl {
 	return (*IOPCServerListVtbl)(unsafe.Pointer(sl.IUnknown.LpVtbl))
 }
 
+// EnumClassesOfCategories enumerates OPC servers belonging to specified categories.
+//
+// Example:
+//
+//	enum, err := list2.EnumClassesOfCategories([]windows.GUID{com.OPCCAT_DA20}, nil)
 func (sl *IOPCServerList2) EnumClassesOfCategories(rgcatidImpl []windows.GUID, rgcatidReq []windows.GUID) (ppenumClsid *IEnumGUID, err error) {
 	var r0 uintptr
 	cImplemented := uint32(len(rgcatidImpl))
@@ -41,6 +48,11 @@ func (sl *IOPCServerList2) EnumClassesOfCategories(rgcatidImpl []windows.GUID, r
 	return
 }
 
+// GetClassDetails retrieves ProgID, UserType, and Version Independent ProgID for a given CLSID.
+//
+// Example:
+//
+//	pProgID, pUserType, pVIPID, err := list2.GetClassDetails(&clsid)
 func (sl *IOPCServerList2) GetClassDetails(guid *windows.GUID) (*uint16, *uint16, *uint16, error) {
 	var ppszProgID, ppszUserType, ppszVerIndProgID *uint16
 	r0, _, _ := syscall.SyscallN(sl.Vtbl().GetClassDetails, uintptr(unsafe.Pointer(sl.IUnknown)), uintptr(unsafe.Pointer(guid)), uintptr(unsafe.Pointer(&ppszProgID)), uintptr(unsafe.Pointer(&ppszUserType)), uintptr(unsafe.Pointer(&ppszVerIndProgID)))
@@ -50,6 +62,11 @@ func (sl *IOPCServerList2) GetClassDetails(guid *windows.GUID) (*uint16, *uint16
 	return ppszProgID, ppszUserType, ppszVerIndProgID, nil
 }
 
+// CLSIDFromProgID retrieves the CLSID for a given ProgID.
+//
+// Example:
+//
+//	clsid, err := list2.CLSIDFromProgID("Matrikon.OPC.Simulation.1")
 func (sl *IOPCServerList2) CLSIDFromProgID(szProgID string) (*windows.GUID, error) {
 	var clsid windows.GUID
 	pProgID, err := syscall.UTF16PtrFromString(szProgID)

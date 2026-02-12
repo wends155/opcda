@@ -1,4 +1,5 @@
 //go:build windows
+
 package com
 
 import (
@@ -23,6 +24,7 @@ type IOPCGroupStateMgtVtbl struct {
 	CloneGroup uintptr
 }
 
+// IOPCGroupStateMgt allows clients to manage the state of an OPC group.
 type IOPCGroupStateMgt struct {
 	*IUnknown
 }
@@ -31,6 +33,11 @@ func (sl *IOPCGroupStateMgt) Vtbl() *IOPCGroupStateMgtVtbl {
 	return (*IOPCGroupStateMgtVtbl)(unsafe.Pointer(sl.IUnknown.LpVtbl))
 }
 
+// GetState retrieves the current state of the OPC group.
+//
+// Example:
+//
+//	rate, active, name, bias, deadband, lcid, clientHandle, serverHandle, err := group.GetState()
 func (sl *IOPCGroupStateMgt) GetState() (pUpdateRate uint32, pActive bool, ppName string, pTimeBias int32, pPercentDeadband float32, pLCID uint32, phClientGroup uint32, phServerGroup uint32, err error) {
 	var pName *uint16
 	var pActiveInt int32
@@ -59,6 +66,11 @@ func (sl *IOPCGroupStateMgt) GetState() (pUpdateRate uint32, pActive bool, ppNam
 	return
 }
 
+// SetState modifies the current state of an OPC group.
+//
+// Example:
+//
+//	revisedRate, err := group.SetState(&newRate, &active, nil, nil, nil, nil)
 func (sl *IOPCGroupStateMgt) SetState(requestedUpdateRate *uint32, pActive *int32, pTimeBias *int32, pPercentDeadband *float32, pLCID *uint32, phClientGroup *uint32) (pRevisedUpdateRate uint32, err error) {
 	r0, _, _ := syscall.SyscallN(
 		sl.Vtbl().SetState,
@@ -78,6 +90,11 @@ func (sl *IOPCGroupStateMgt) SetState(requestedUpdateRate *uint32, pActive *int3
 	return
 }
 
+// SetName sets a new name for the OPC group.
+//
+// Example:
+//
+//	err := group.SetName("NewGroupName")
 func (sl *IOPCGroupStateMgt) SetName(szName string) error {
 	pName, err := syscall.UTF16PtrFromString(szName)
 	if err != nil {

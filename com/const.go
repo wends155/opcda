@@ -1,4 +1,5 @@
 //go:build windows
+
 package com
 
 type VT uint16
@@ -113,4 +114,10 @@ const (
 	EOAC_DISABLE_AAA       uint32 = 0x1000
 	EOAC_NO_CUSTOM_MARSHAL uint32 = 0x2000
 	EOAC_RESERVED1         uint32 = 0x4000
+)
+
+// authentication identity constants
+const (
+	SEC_WINNT_AUTH_IDENTITY_ANSI    uint32 = 0x1
+	SEC_WINNT_AUTH_IDENTITY_UNICODE uint32 = 0x2
 )

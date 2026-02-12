@@ -1,4 +1,5 @@
 //go:build windows
+
 package com
 
 import (
@@ -26,6 +27,8 @@ type IOPCItemMgtVtbl struct {
 	CreateEnumerator uintptr
 }
 
+// IOPCItemMgt is an interface for managing OPC items within a group.
+// It allows adding, removing, and validating items.
 type IOPCItemMgt struct {
 	*IUnknown
 }
@@ -77,6 +80,19 @@ func (result *TagOPCITEMRESULT) CloneToStruct() TagOPCITEMRESULTStruct {
 	}
 }
 
+// AddItems adds one or more items to the group.
+//
+// Parameters:
+//
+//	items: A slice of TagOPCITEMDEF structures defining the items to add.
+//
+// Returns:
+//
+//	A slice of TagOPCITEMRESULTStruct and a slice of HRESULTs (as int32).
+//
+// Example:
+//
+//	results, errors, err := mgt.AddItems([]com.TagOPCITEMDEF{{SzItemID: com.SysAllocStringLen("Random.Int4"), ...}})
 func (sl *IOPCItemMgt) AddItems(items []TagOPCITEMDEF) ([]TagOPCITEMRESULTStruct, []int32, error) {
 	dwCount := uint32(len(items))
 	var pAddResults unsafe.Pointer
@@ -108,13 +124,11 @@ func (sl *IOPCItemMgt) AddItems(items []TagOPCITEMDEF) ([]TagOPCITEMRESULTStruct
 	return addResults, addErrors, nil
 }
 
-//        virtual HRESULT STDMETHODCALLTYPE ValidateItems(
-//            /* [in] */ DWORD dwCount,
-//            /* [size_is][in] */ OPCITEMDEF *pItemArray,
-//            /* [in] */ BOOL bBlobUpdate,
-//            /* [size_is][size_is][out] */ OPCITEMRESULT **ppValidationResults,
-//            /* [size_is][size_is][out] */ HRESULT **ppErrors) = 0;
-
+// ValidateItems determines if one or more items could be added to the group.
+//
+// Example:
+//
+//	results, errors, err := mgt.ValidateItems(items, false)
 func (sl *IOPCItemMgt) ValidateItems(items []TagOPCITEMDEF, bBlobUpdate bool) ([]TagOPCITEMRESULTStruct, []int32, error) {
 	dwCount := uint32(len(items))
 	var pValidationResults unsafe.Pointer
@@ -147,11 +161,15 @@ func (sl *IOPCItemMgt) ValidateItems(items []TagOPCITEMDEF, bBlobUpdate bool) ([
 	return validationResults, validationErrors, nil
 }
 
-//        virtual HRESULT STDMETHODCALLTYPE RemoveItems(
-//            /* [in] */ DWORD dwCount,
-//            /* [size_is][in] */ OPCHANDLE *phServer,
-//            /* [size_is][size_is][out] */ HRESULT **ppErrors) = 0;
-
+// RemoveItems removes one or more items from the group.
+//
+// Parameters:
+//
+//	phServer: Server handles of the items to remove.
+//
+// Example:
+//
+//	errors, err := mgt.RemoveItems(serverHandles)
 func (sl *IOPCItemMgt) RemoveItems(phServer []uint32) ([]int32, error) {
 	dwCount := uint32(len(phServer))
 	var pErrors unsafe.Pointer
@@ -176,12 +194,11 @@ func (sl *IOPCItemMgt) RemoveItems(phServer []uint32) ([]int32, error) {
 	return errors, nil
 }
 
-//        virtual HRESULT STDMETHODCALLTYPE SetActiveState(
-//            /* [in] */ DWORD dwCount,
-//            /* [size_is][in] */ OPCHANDLE *phServer,
-//            /* [in] */ BOOL bActive,
-//            /* [size_is][size_is][out] */ HRESULT **ppErrors) = 0;
-
+// SetActiveState sets the active state of one or more items.
+//
+// Example:
+//
+//	errors, err := mgt.SetActiveState(serverHandles, true)
 func (sl *IOPCItemMgt) SetActiveState(phServer []uint32, bActive bool) ([]int32, error) {
 	dwCount := uint32(len(phServer))
 	var pErrors unsafe.Pointer
@@ -207,12 +224,11 @@ func (sl *IOPCItemMgt) SetActiveState(phServer []uint32, bActive bool) ([]int32,
 	return errors, nil
 }
 
-//        virtual HRESULT STDMETHODCALLTYPE SetClientHandles(
-//            /* [in] */ DWORD dwCount,
-//            /* [size_is][in] */ OPCHANDLE *phServer,
-//            /* [size_is][in] */ OPCHANDLE *phClient,
-//            /* [size_is][size_is][out] */ HRESULT **ppErrors) = 0;
-
+// SetClientHandles sets the client handles for one or more items.
+//
+// Example:
+//
+//	errors, err := mgt.SetClientHandles(serverHandles, clientHandles)
 func (sl *IOPCItemMgt) SetClientHandles(phServer []uint32, phClient []uint32) ([]int32, error) {
 	dwCount := uint32(len(phServer))
 	var pErrors unsafe.Pointer
@@ -238,12 +254,11 @@ func (sl *IOPCItemMgt) SetClientHandles(phServer []uint32, phClient []uint32) ([
 	return errors, nil
 }
 
-//        virtual HRESULT STDMETHODCALLTYPE SetDatatypes(
-//            /* [in] */ DWORD dwCount,
-//            /* [size_is][in] */ OPCHANDLE *phServer,
-//            /* [size_is][in] */ VARTYPE *pRequestedDatatypes,
-//            /* [size_is][size_is][out] */ HRESULT **ppErrors) = 0;
-
+// SetDatatypes sets the requested data types for one or more items.
+//
+// Example:
+//
+//	errors, err := mgt.SetDatatypes(serverHandles, requestedTypes)
 func (sl *IOPCItemMgt) SetDatatypes(phServer []uint32, pRequestedDatatypes []VT) ([]int32, error) {
 	dwCount := uint32(len(phServer))
 	var pErrors unsafe.Pointer

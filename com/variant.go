@@ -1,4 +1,5 @@
 //go:build windows
+
 package com
 
 import (
@@ -18,6 +19,14 @@ func (v *VARIANT) IsArray() bool {
 	return v.VT&VT_ARRAY == VT_ARRAY
 }
 
+// Value returns the value held by the VARIANT as a Go interface{}.
+// It handles basic types, strings, dates, and arrays.
+//
+// Example:
+//
+//	val := v.Value()
+//	fmt.Printf("Value is %v\n", val)
+//
 //gocyclo:ignore
 func (v *VARIANT) Value() interface{} {
 	if v.VT == VT_EMPTY || v.VT == VT_NULL {
@@ -71,11 +80,21 @@ func (v *VARIANT) Value() interface{} {
 	return nil
 }
 
+// VariantWrapper wraps a VARIANT and provides helper methods for setting and clearing values.
+// It is particularly useful when you need to manage the lifecycle of BSTRs or other resources.
 type VariantWrapper struct {
 	Variant *VARIANT
 	str     []*uint16
 }
 
+// NewVariant creates a new VariantWrapper and initializes it with the given value.
+//
+// Example:
+//
+//	vw, err := com.NewVariant("Hello")
+//	if err == nil {
+//	  defer vw.Clear()
+//	}
 func NewVariant(val interface{}) (*VariantWrapper, error) {
 	v := &VariantWrapper{Variant: &VARIANT{}}
 	err := v.SetValue(val)

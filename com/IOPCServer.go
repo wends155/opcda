@@ -1,4 +1,5 @@
 //go:build windows
+
 package com
 
 import (
@@ -16,6 +17,8 @@ var IID_IOPCServer = windows.GUID{
 	Data4: [8]byte{0x96, 0x75, 0x00, 0x20, 0xaf, 0xd8, 0xad, 0xb3},
 }
 
+// IOPCServer is the main interface for an OPC server.
+// It provides methods to manage groups, query status, and remove groups.
 type IOPCServer struct {
 	*IUnknown
 }
@@ -34,6 +37,22 @@ func (v *IOPCServer) Vtbl() *IOPCServerVtbl {
 	return (*IOPCServerVtbl)(unsafe.Pointer(v.IUnknown.LpVtbl))
 }
 
+// AddGroup adds a new OPC group to the server.
+//
+// Parameters:
+//
+//	szName: The name of the group.
+//	bActive: Whether the group should be active upon creation.
+//	dwRequestedUpdateRate: The desired update rate in milliseconds.
+//	hClientGroup: A client-side handle for the group.
+//	pTimeBias: Optional time bias.
+//	pPercentDeadband: Optional deadband percentage.
+//	dwLCID: The locale ID for the group.
+//	riid: The interface ID requested for the group object (usually IID_IOPCItemMgt).
+//
+// Example:
+//
+//	hServerGroup, revisedRate, pUnk, err := server.AddGroup("Group1", true, 1000, 1, nil, nil, 0x800, &com.IID_IOPCItemMgt)
 func (v *IOPCServer) AddGroup(
 	szName string,
 	bActive bool,
@@ -110,6 +129,14 @@ type ServerStatus struct {
 	VendorInfo     string
 }
 
+// GetStatus retrieves the current status of the OPC server.
+//
+// Example:
+//
+//	status, err := server.GetStatus()
+//	if err == nil {
+//	  fmt.Printf("Server State: %v\n", status.ServerState)
+//	}
 func (v *IOPCServer) GetStatus() (status *ServerStatus, err error) {
 	var pStatus *OPCSERVERSTATUS
 	r0, _, _ := syscall.SyscallN(
@@ -145,6 +172,11 @@ func (v *IOPCServer) GetStatus() (status *ServerStatus, err error) {
 	return
 }
 
+// RemoveGroup removes an OPC group from the server.
+//
+// Example:
+//
+//	err := server.RemoveGroup(hServerGroup, false)
 func (v *IOPCServer) RemoveGroup(hServerGroup uint32, bForce bool) (err error) {
 	r0, _, _ := syscall.SyscallN(
 		v.Vtbl().RemoveGroup,

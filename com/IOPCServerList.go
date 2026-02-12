@@ -1,4 +1,5 @@
 //go:build windows
+
 package com
 
 import (
@@ -29,6 +30,7 @@ type IOPCServerListVtbl struct {
 	CLSIDFromProgID         uintptr
 }
 
+// IOPCServerList provides methods to enumerate and find OPC servers.
 type IOPCServerList struct {
 	*IUnknown
 }
@@ -37,6 +39,11 @@ func (sl *IOPCServerList) Vtbl() *IOPCServerListVtbl {
 	return (*IOPCServerListVtbl)(unsafe.Pointer(sl.IUnknown.LpVtbl))
 }
 
+// EnumClassesOfCategories enumerates OPC servers belonging to specified categories.
+//
+// Example:
+//
+//	enum, err := list.EnumClassesOfCategories([]windows.GUID{com.OPCCAT_DA20}, nil)
 func (sl *IOPCServerList) EnumClassesOfCategories(rgcatidImpl []windows.GUID, rgcatidReq []windows.GUID) (ppenumClsid *IEnumGUID, err error) {
 	var r0 uintptr
 	cImplemented := uint32(len(rgcatidImpl))
@@ -55,6 +62,11 @@ func (sl *IOPCServerList) EnumClassesOfCategories(rgcatidImpl []windows.GUID, rg
 	return
 }
 
+// GetClassDetails retrieves ProgID and UserType for a given CLSID.
+//
+// Example:
+//
+//	pProgID, pUserType, err := list.GetClassDetails(&clsid)
 func (sl *IOPCServerList) GetClassDetails(guid *windows.GUID) (*uint16, *uint16, error) {
 	var ppszProgID, ppszUserType *uint16
 	r0, _, _ := syscall.SyscallN(sl.Vtbl().GetClassDetails, uintptr(unsafe.Pointer(sl.IUnknown)), uintptr(unsafe.Pointer(guid)), uintptr(unsafe.Pointer(&ppszProgID)), uintptr(unsafe.Pointer(&ppszUserType)))
@@ -64,6 +76,11 @@ func (sl *IOPCServerList) GetClassDetails(guid *windows.GUID) (*uint16, *uint16,
 	return ppszProgID, ppszUserType, nil
 }
 
+// CLSIDFromProgID retrieves the CLSID for a given ProgID.
+//
+// Example:
+//
+//	clsid, err := list.CLSIDFromProgID("Matrikon.OPC.Simulation.1")
 func (sl *IOPCServerList) CLSIDFromProgID(szProgID string) (*windows.GUID, error) {
 	var clsid windows.GUID
 	pProgID, err := syscall.UTF16PtrFromString(szProgID)

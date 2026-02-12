@@ -1,3 +1,5 @@
+// Package com provides thin wrappers for Windows COM and OLE Automation.
+// It is specifically tailored for interacting with OPC DA (Data Access) servers.
 //go:build windows
 
 package com
@@ -30,6 +32,13 @@ var (
 	procSysFreeString           = modOleaut32.NewProc("SysFreeString")
 )
 
+// CoTaskMemFree frees a block of memory previously allocated through a call to CoTaskMemAlloc or CoTaskMemRealloc.
+// It is essential for freeing memory returned by COM methods that allocate memory for the caller.
+//
+// Example:
+//
+//	var p unsafe.Pointer = ... // from a COM call
+//	defer com.CoTaskMemFree(p)
 func CoTaskMemFree(pv unsafe.Pointer) {
 	if pv == nil {
 		return
@@ -44,14 +53,24 @@ const (
 	CLSCTX_REMOTE_SERVER CLSCTX = 0x10
 )
 
+// COAUTHIDENTITY contains a user name and password.
+// It is used to establish a non-default client identity for authentication.
 type COAUTHIDENTITY struct {
-	User           *uint16
-	UserLength     uint32
-	Domain         *uint16
-	DomainLength   uint32
-	Password       *uint16
+	// User is a pointer to a string containing the user name.
+	User *uint16
+	// UserLength is the length of the User string, excluding the terminating NULL character.
+	UserLength uint32
+	// Domain is a pointer to a string containing the domain or workgroup name.
+	Domain *uint16
+	// DomainLength is the length of the Domain string, excluding the terminating NULL character.
+	DomainLength uint32
+	// Password is a pointer to a string containing the user's password in the domain or workgroup.
+	Password *uint16
+	// PasswordLength is the length of the Password string, excluding the terminating NULL character.
 	PasswordLength uint32
-	Flags          uint32
+	// Flags indicates whether the strings are ANSI (SEC_WINNT_AUTH_IDENTITY_ANSI)
+	// or Unicode (SEC_WINNT_AUTH_IDENTITY_UNICODE).
+	Flags uint32
 }
 
 type COAUTHINFO struct {
@@ -77,6 +96,12 @@ type MULTI_QI struct {
 	Hr   int32 // long
 }
 
+// CoCreateInstanceEx creates an instance of a specific class on a specific computer.
+// It allows for remote object creation and requesting multiple interfaces at once.
+//
+// Example:
+//
+//	err := com.CoCreateInstanceEx(clsid, nil, com.CLSCTX_REMOTE_SERVER, &serverInfo, 1, &results)
 func CoCreateInstanceEx(Clsid *windows.GUID, punkOuter *IUnknown, dwClsCtx CLSCTX, pServerInfo *COSERVERINFO, dwCount uint32, pResults *MULTI_QI) (ret error) {
 	r0, _, _ := syscall.SyscallN(procCoCreateInstanceEx.Addr(), uintptr(unsafe.Pointer(Clsid)), uintptr(unsafe.Pointer(punkOuter)), uintptr(dwClsCtx), uintptr(unsafe.Pointer(pServerInfo)), uintptr(dwCount), uintptr(unsafe.Pointer(pResults)))
 	if r0 != 0 {
@@ -85,6 +110,13 @@ func CoCreateInstanceEx(Clsid *windows.GUID, punkOuter *IUnknown, dwClsCtx CLSCT
 	return
 }
 
+// VariantClear clears a VARIANT, releasing any resources it holds (like BSTRs or SafeArrays).
+//
+// Example:
+//
+//	var v com.VARIANT
+//	// ... use v ...
+//	com.VariantClear(&v)
 func VariantClear(pvarg *VARIANT) (err error) {
 	r0, _, _ := syscall.SyscallN(procVariantClear.Addr(), uintptr(unsafe.Pointer(pvarg)))
 	if r0 != 0 {
@@ -139,6 +171,13 @@ func safeArrayGetElement(safeArray *SafeArray, index int32, pv unsafe.Pointer) (
 	return
 }
 
+// SysAllocStringLen allocates a new BSTR from a Go string.
+// The returned pointer must eventually be freed with SysFreeString.
+//
+// Example:
+//
+//	bstr := com.SysAllocStringLen("Hello")
+//	defer com.SysFreeString(bstr)
 func SysAllocStringLen(v string) (ss *uint16) {
 	u := windows.StringToUTF16(v)
 	pss, _, _ := procSysAllocStringLen.Call(uintptr(unsafe.Pointer(&u[0])), uintptr(len(u)-1))
@@ -184,6 +223,12 @@ func SysFreeString(v *uint16) (err error) {
 	return
 }
 
+// MakeCOMObjectEx creates a COM object on a specified computer and returns its IUnknown interface.
+// It simplifies the process of creating objects, especially on remote hosts.
+//
+// Example:
+//
+//	punk, err := com.MakeCOMObjectEx("remote-pc", com.CLSCTX_REMOTE_SERVER, clsid, iid)
 func MakeCOMObjectEx(hostname string, serverLocation CLSCTX, requestedClass *windows.GUID, requestedInterface *windows.GUID) (*IUnknown, error) {
 	reqInterface := MULTI_QI{
 		PIID: requestedInterface,
@@ -217,7 +262,16 @@ func IsLocal(host string) bool {
 	return strings.ToLower(name) == strings.ToLower(host)
 }
 
-// Initialize initialize COM with COINIT_MULTITHREADED
+// Initialize initializes the COM library on the current thread and sets the concurrency model to COINIT_MULTITHREADED.
+// It also initializes COM security with default settings.
+// This should be called once per application or thread before using any COM objects.
+//
+// Example:
+//
+//	if err := com.Initialize(); err != nil {
+//	  log.Fatal(err)
+//	}
+//	defer com.Uninitialize()
 func Initialize() error {
 	config := DefaultInitConfig()
 	return InitializeWithConfig(config)
@@ -250,7 +304,12 @@ func InitializeWithConfig(config *InitConfig) error {
 	return nil
 }
 
-// Uninitialize uninitialize COM
+// Uninitialize closes the COM library on the current thread.
+// It should be called after all COM objects have been released and you are done with the COM library.
+//
+// Example:
+//
+//	defer com.Uninitialize()
 func Uninitialize() {
 	windows.CoUninitialize()
 }
