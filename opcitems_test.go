@@ -1,4 +1,5 @@
-//go:build windows
+//go:build windows && integration
+
 package opcda
 
 import (

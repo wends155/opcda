@@ -11,8 +11,7 @@ import (
 )
 
 type OPCGroups struct {
-	iServer                *com.IOPCServer
-	iCommon                *com.IOPCCommon
+	provider               serverProvider
 	parent                 *OPCServer
 	groupID                uint32
 	defaultActive          bool
@@ -30,13 +29,12 @@ func NewOPCGroups(opcServer *OPCServer) *OPCGroups {
 	}
 	return &OPCGroups{
 		parent:                 opcServer,
-		iServer:                opcServer.iServer,
+		provider:               opcServer.provider,
 		defaultActive:          true,
 		defaultGroupUpdateRate: uint32(1000),
 		defaultDeadband:        float32(0.0),
 		defaultLocaleID:        uint32(0x0400),
 		defaultGroupTimeBias:   int32(0),
-		iCommon:                opcServer.iCommon,
 	}
 }
 
@@ -168,13 +166,13 @@ func (gs *OPCGroups) ItemByName(name string) (*OPCGroup, error) {
 
 // Add Creates a new OPCGroup object and adds it to the collections
 func (gs *OPCGroups) Add(szName string) (*OPCGroup, error) {
-	if gs == nil || gs.iServer == nil {
+	if gs == nil || gs.provider == nil {
 		return nil, errors.New("uninitialized groups or failed server connection")
 	}
 	gs.Lock()
 	defer gs.Unlock()
 	hClientGroup := atomic.AddUint32(&gs.groupID, 1)
-	phServerGroup, pRevisedUpdateRate, ppUnk, err := gs.iServer.AddGroup(
+	phServerGroup, pRevisedUpdateRate, ppUnk, err := gs.provider.AddGroup(
 		szName,
 		gs.defaultActive,
 		gs.defaultGroupUpdateRate,
@@ -241,10 +239,10 @@ func (gs *OPCGroups) Remove(serverHandle uint32) error {
 }
 
 func (gs *OPCGroups) doRemove(serverHandle uint32) error {
-	if gs == nil || gs.iServer == nil {
+	if gs == nil || gs.provider == nil {
 		return errors.New("uninitialized groups or failed server connection")
 	}
-	return gs.iServer.RemoveGroup(serverHandle, true)
+	return gs.provider.RemoveGroup(serverHandle, true)
 }
 
 // RemoveByName Removes an OPCGroup from the collection by name

@@ -11,14 +11,85 @@ import (
 	"unsafe"
 
 	"github.com/wends155/opcda/com"
+	"golang.org/x/sys/windows"
 )
+
+type groupProvider interface {
+	SetName(name string) error
+	GetState() (updateRate uint32, active bool, name string, timeBias int32, deadband float32, localeID uint32, clientHandle uint32, serverHandle uint32, err error)
+	SetState(pRequestedUpdateRate *uint32, pActive *int32, pTimeBias *int32, pPercentDeadband *float32, pLCID *uint32, phClientGroup *uint32) (pRevisedUpdateRate uint32, err error)
+	SyncRead(source com.OPCDATASOURCE, serverHandles []uint32) ([]*com.ItemState, []int32, error)
+	SyncWrite(serverHandles []uint32, values []com.VARIANT) ([]int32, error)
+	AsyncRead(serverHandles []uint32, transactionID uint32) (cancelID uint32, errs []int32, err error)
+	AsyncWrite(serverHandles []uint32, values []com.VARIANT, transactionID uint32) (cancelID uint32, errs []int32, err error)
+	AsyncRefresh(source com.OPCDATASOURCE, transactionID uint32) (cancelID uint32, err error)
+	AsyncCancel(cancelID uint32) error
+	QueryInterface(iid *windows.GUID, ppv unsafe.Pointer) error
+	Release()
+}
+
+type comGroupProvider struct {
+	groupStateMgt *com.IOPCGroupStateMgt
+	syncIO        *com.IOPCSyncIO
+	asyncIO2      *com.IOPCAsyncIO2
+}
+
+func (p *comGroupProvider) SetName(name string) error {
+	return p.groupStateMgt.SetName(name)
+}
+
+func (p *comGroupProvider) GetState() (uint32, bool, string, int32, float32, uint32, uint32, uint32, error) {
+	return p.groupStateMgt.GetState()
+}
+
+func (p *comGroupProvider) SetState(pRequestedUpdateRate *uint32, pActive *int32, pTimeBias *int32, pPercentDeadband *float32, pLCID *uint32, phClientGroup *uint32) (uint32, error) {
+	return p.groupStateMgt.SetState(pRequestedUpdateRate, pActive, pTimeBias, pPercentDeadband, pLCID, phClientGroup)
+}
+
+func (p *comGroupProvider) SyncRead(source com.OPCDATASOURCE, serverHandles []uint32) ([]*com.ItemState, []int32, error) {
+	return p.syncIO.Read(source, serverHandles)
+}
+
+func (p *comGroupProvider) SyncWrite(serverHandles []uint32, values []com.VARIANT) ([]int32, error) {
+	return p.syncIO.Write(serverHandles, values)
+}
+
+func (p *comGroupProvider) AsyncRead(serverHandles []uint32, transactionID uint32) (uint32, []int32, error) {
+	return p.asyncIO2.Read(serverHandles, transactionID)
+}
+
+func (p *comGroupProvider) AsyncWrite(serverHandles []uint32, values []com.VARIANT, transactionID uint32) (uint32, []int32, error) {
+	return p.asyncIO2.Write(serverHandles, values, transactionID)
+}
+
+func (p *comGroupProvider) AsyncRefresh(source com.OPCDATASOURCE, transactionID uint32) (uint32, error) {
+	return p.asyncIO2.Refresh2(source, transactionID)
+}
+
+func (p *comGroupProvider) AsyncCancel(cancelID uint32) error {
+	return p.asyncIO2.Cancel2(cancelID)
+}
+
+func (p *comGroupProvider) QueryInterface(iid *windows.GUID, ppv unsafe.Pointer) error {
+	return p.groupStateMgt.IUnknown.QueryInterface(iid, ppv)
+}
+
+func (p *comGroupProvider) Release() {
+	if p.groupStateMgt != nil {
+		p.groupStateMgt.Release()
+	}
+	if p.syncIO != nil {
+		p.syncIO.Release()
+	}
+	if p.asyncIO2 != nil {
+		p.asyncIO2.Release()
+	}
+}
 
 type OPCGroup struct {
 	parent             *OPCGroups
-	groupStateMgt      *com.IOPCGroupStateMgt
-	syncIO             *com.IOPCSyncIO
-	asyncIO2           *com.IOPCAsyncIO2
-	iCommon            *com.IOPCCommon
+	provider           serverProvider
+	groupProvider      groupProvider
 	clientGroupHandle  uint32
 	serverGroupHandle  uint32
 	groupName          string
@@ -68,17 +139,20 @@ func NewOPCGroup(
 	}
 
 	o := &OPCGroup{
-		parent:            opcGroups,
-		groupStateMgt:     &com.IOPCGroupStateMgt{IUnknown: iUnknown},
-		syncIO:            &com.IOPCSyncIO{IUnknown: iUnknownSyncIO},
-		asyncIO2:          &com.IOPCAsyncIO2{IUnknown: iUnknownAsyncIO2},
+		parent: opcGroups,
+		groupProvider: &comGroupProvider{
+			groupStateMgt: &com.IOPCGroupStateMgt{IUnknown: iUnknown},
+			syncIO:        &com.IOPCSyncIO{IUnknown: iUnknownSyncIO},
+			asyncIO2:      &com.IOPCAsyncIO2{IUnknown: iUnknownAsyncIO2},
+		},
 		clientGroupHandle: clientGroupHandle,
 		serverGroupHandle: serverGroupHandle,
 		groupName:         groupName,
 		revisedUpdateRate: revisedUpdateRate,
-		iCommon:           opcGroups.iCommon,
+		provider:          opcGroups.provider,
 	}
-	o.items = NewOPCItems(o, &com.IOPCItemMgt{IUnknown: iUnknownItemMgt}, opcGroups.iCommon)
+	itemMgt := &comItemMgtProvider{itemMgt: &com.IOPCItemMgt{IUnknown: iUnknownItemMgt}}
+	o.items = NewOPCItems(o, itemMgt, opcGroups.provider)
 	return o, nil
 }
 
@@ -100,10 +174,10 @@ func (g *OPCGroup) GetName() string {
 
 // SetName set the name of the group
 func (g *OPCGroup) SetName(name string) error {
-	if g == nil || g.groupStateMgt == nil {
+	if g == nil || g.groupProvider == nil {
 		return errors.New("uninitialized group")
 	}
-	err := g.groupStateMgt.SetName(name)
+	err := g.groupProvider.SetName(name)
 	if err != nil {
 		return err
 	}
@@ -113,10 +187,10 @@ func (g *OPCGroup) SetName(name string) error {
 
 // GetIsActive Returns whether the group is active
 func (g *OPCGroup) GetIsActive() bool {
-	if g == nil || g.groupStateMgt == nil {
+	if g == nil || g.groupProvider == nil {
 		return false
 	}
-	_, b, _, _, _, _, _, _, err := g.groupStateMgt.GetState()
+	_, b, _, _, _, _, _, _, err := g.groupProvider.GetState()
 	if err != nil {
 		return false
 	}
@@ -125,11 +199,11 @@ func (g *OPCGroup) GetIsActive() bool {
 
 // SetIsActive set whether the group is active
 func (g *OPCGroup) SetIsActive(isActive bool) error {
-	if g == nil || g.groupStateMgt == nil {
+	if g == nil || g.groupProvider == nil {
 		return errors.New("uninitialized group")
 	}
 	v := com.BoolToComBOOL(isActive)
-	_, err := g.groupStateMgt.SetState(nil, &v, nil, nil, nil, nil)
+	_, err := g.groupProvider.SetState(nil, &v, nil, nil, nil, nil)
 	return err
 }
 
@@ -143,10 +217,10 @@ func (g *OPCGroup) GetClientHandle() uint32 {
 
 // SetClientHandle set a Long value associated with the group
 func (g *OPCGroup) SetClientHandle(clientHandle uint32) error {
-	if g == nil || g.groupStateMgt == nil {
+	if g == nil || g.groupProvider == nil {
 		return errors.New("uninitialized group")
 	}
-	_, err := g.groupStateMgt.SetState(nil, nil, nil, nil, nil, &clientHandle)
+	_, err := g.groupProvider.SetState(nil, nil, nil, nil, nil, &clientHandle)
 	if err != nil {
 		return err
 	}
@@ -164,55 +238,55 @@ func (g *OPCGroup) GetServerHandle() uint32 {
 
 // GetLocaleID get the locale identifier for the group
 func (g *OPCGroup) GetLocaleID() (uint32, error) {
-	if g == nil || g.groupStateMgt == nil {
+	if g == nil || g.groupProvider == nil {
 		return 0, errors.New("uninitialized group")
 	}
-	_, _, _, _, _, localeID, _, _, err := g.groupStateMgt.GetState()
+	_, _, _, _, _, localeID, _, _, err := g.groupProvider.GetState()
 	return localeID, err
 }
 
 // SetLocaleID set the locale identifier for the group
 func (g *OPCGroup) SetLocaleID(id uint32) error {
-	if g == nil || g.groupStateMgt == nil {
+	if g == nil || g.groupProvider == nil {
 		return errors.New("uninitialized group")
 	}
-	_, err := g.groupStateMgt.SetState(nil, nil, nil, nil, &id, nil)
+	_, err := g.groupProvider.SetState(nil, nil, nil, nil, &id, nil)
 	return err
 }
 
 // GetTimeBias This property provides the information needed to convert the time stamp on the data back to the local time of the device
 func (g *OPCGroup) GetTimeBias() (int32, error) {
-	if g == nil || g.groupStateMgt == nil {
+	if g == nil || g.groupProvider == nil {
 		return 0, errors.New("uninitialized group")
 	}
-	_, _, _, timeBias, _, _, _, _, err := g.groupStateMgt.GetState()
+	_, _, _, timeBias, _, _, _, _, err := g.groupProvider.GetState()
 	return timeBias, err
 }
 
 // SetTimeBias This property provides the information needed to convert the time stamp on the data back to the local time of the device
 func (g *OPCGroup) SetTimeBias(timeBias int32) error {
-	if g == nil || g.groupStateMgt == nil {
+	if g == nil || g.groupProvider == nil {
 		return errors.New("uninitialized group")
 	}
-	_, err := g.groupStateMgt.SetState(nil, nil, &timeBias, nil, nil, nil)
+	_, err := g.groupProvider.SetState(nil, nil, &timeBias, nil, nil, nil)
 	return err
 }
 
 // GetDeadband A deadband is expressed as percent of full scale (legal values 0 to 100).
 func (g *OPCGroup) GetDeadband() (float32, error) {
-	if g == nil || g.groupStateMgt == nil {
+	if g == nil || g.groupProvider == nil {
 		return 0, errors.New("uninitialized group")
 	}
-	_, _, _, _, deadband, _, _, _, err := g.groupStateMgt.GetState()
+	_, _, _, _, deadband, _, _, _, err := g.groupProvider.GetState()
 	return deadband, err
 }
 
 // SetDeadband A deadband is expressed as percent of full scale (legal values 0 to 100).
 func (g *OPCGroup) SetDeadband(deadband float32) error {
-	if g == nil || g.groupStateMgt == nil {
+	if g == nil || g.groupProvider == nil {
 		return errors.New("uninitialized group")
 	}
-	_, err := g.groupStateMgt.SetState(nil, nil, nil, &deadband, nil, nil)
+	_, err := g.groupProvider.SetState(nil, nil, nil, &deadband, nil, nil)
 	return err
 }
 
@@ -224,19 +298,19 @@ func (g *OPCGroup) SetDeadband(deadband float32) error {
 // that rate, so reading the property may result in a different rate (the server will use the closest rate it
 // does support).
 func (g *OPCGroup) GetUpdateRate() (uint32, error) {
-	if g == nil || g.groupStateMgt == nil {
+	if g == nil || g.groupProvider == nil {
 		return 0, errors.New("uninitialized group")
 	}
-	updateRate, _, _, _, _, _, _, _, err := g.groupStateMgt.GetState()
+	updateRate, _, _, _, _, _, _, _, err := g.groupProvider.GetState()
 	return updateRate, err
 }
 
 // SetUpdateRate set the update rate
 func (g *OPCGroup) SetUpdateRate(updateRate uint32) error {
-	if g == nil || g.groupStateMgt == nil {
+	if g == nil || g.groupProvider == nil {
 		return errors.New("uninitialized group")
 	}
-	_, err := g.groupStateMgt.SetState(&updateRate, nil, nil, nil, nil, nil)
+	_, err := g.groupProvider.SetState(&updateRate, nil, nil, nil, nil, nil)
 	return err
 }
 
@@ -250,10 +324,10 @@ func (g *OPCGroup) OPCItems() *OPCItems {
 
 // SyncRead reads the value, quality and timestamp information for one or more items in a group.
 func (g *OPCGroup) SyncRead(source com.OPCDATASOURCE, serverHandles []uint32) ([]*com.ItemState, []error, error) {
-	if g == nil || g.syncIO == nil {
+	if g == nil || g.groupProvider == nil {
 		return nil, nil, errors.New("uninitialized group")
 	}
-	values, errList, err := g.syncIO.Read(source, serverHandles)
+	values, errList, err := g.groupProvider.SyncRead(source, serverHandles)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -270,7 +344,7 @@ func (g *OPCGroup) SyncRead(source com.OPCDATASOURCE, serverHandles []uint32) ([
 
 // SyncWrite Writes values to one or more items in a group
 func (g *OPCGroup) SyncWrite(serverHandles []uint32, values []interface{}) ([]error, error) {
-	if g == nil || g.syncIO == nil {
+	if g == nil || g.groupProvider == nil {
 		return nil, errors.New("uninitialized group")
 	}
 	variants := make([]com.VARIANT, len(values))
@@ -293,7 +367,7 @@ func (g *OPCGroup) SyncWrite(serverHandles []uint32, values []interface{}) ([]er
 		variantWrappers[i] = variant
 		variants[i] = *variant.Variant
 	}
-	errList, err := g.syncIO.Write(serverHandles, variants)
+	errList, err := g.groupProvider.SyncWrite(serverHandles, variants)
 	if err != nil {
 		return nil, err
 	}
@@ -323,14 +397,8 @@ func (g *OPCGroup) Release() {
 	if g.items != nil {
 		g.items.Release()
 	}
-	if g.groupStateMgt != nil {
-		g.groupStateMgt.Release()
-	}
-	if g.syncIO != nil {
-		g.syncIO.Release()
-	}
-	if g.asyncIO2 != nil {
-		g.asyncIO2.Release()
+	if g.groupProvider != nil {
+		g.groupProvider.Release()
 	}
 }
 
@@ -424,7 +492,7 @@ type CancelCompleteCallBackData struct {
 }
 
 func (g *OPCGroup) advise() (err error) {
-	if g == nil || g.groupStateMgt == nil {
+	if g == nil || g.groupProvider == nil {
 		return errors.New("uninitialized group")
 	}
 	g.callbackLock.Lock()
@@ -433,7 +501,7 @@ func (g *OPCGroup) advise() (err error) {
 		return nil
 	}
 	var iUnknownContainer *com.IUnknown
-	err = g.groupStateMgt.QueryInterface(&com.IID_IConnectionPointContainer, unsafe.Pointer(&iUnknownContainer))
+	err = g.groupProvider.QueryInterface(&com.IID_IConnectionPointContainer, unsafe.Pointer(&iUnknownContainer))
 	if err != nil {
 		return NewOPCWrapperError("query interface IConnectionPointContainer", err)
 	}
@@ -597,11 +665,11 @@ func (g *OPCGroup) AsyncRead(
 	serverHandles []uint32,
 	clientTransactionID uint32,
 ) (cancelID uint32, errs []error, err error) {
-	if g == nil || g.asyncIO2 == nil {
+	if g == nil || g.groupProvider == nil {
 		return 0, nil, errors.New("uninitialized group")
 	}
 	var es []int32
-	cancelID, es, err = g.asyncIO2.Read(
+	cancelID, es, err = g.groupProvider.AsyncRead(
 		serverHandles,
 		clientTransactionID,
 	)
@@ -623,7 +691,7 @@ func (g *OPCGroup) AsyncWrite(
 	values []interface{},
 	clientTransactionID uint32,
 ) (cancelID uint32, errs []error, err error) {
-	if g == nil || g.asyncIO2 == nil {
+	if g == nil || g.groupProvider == nil {
 		return 0, nil, errors.New("uninitialized group")
 	}
 	variants := make([]com.VARIANT, len(values))
@@ -643,7 +711,7 @@ func (g *OPCGroup) AsyncWrite(
 		variants[i] = *variant.Variant
 	}
 	var es []int32
-	cancelID, es, err = g.asyncIO2.Write(
+	cancelID, es, err = g.groupProvider.AsyncWrite(
 		serverHandles,
 		variants,
 		clientTransactionID,
@@ -667,10 +735,10 @@ func (g *OPCGroup) AsyncRefresh(
 	source com.OPCDATASOURCE,
 	clientTransactionID uint32,
 ) (cancelID uint32, err error) {
-	if g == nil || g.asyncIO2 == nil {
+	if g == nil || g.groupProvider == nil {
 		return 0, errors.New("uninitialized group")
 	}
-	cancelID, err = g.asyncIO2.Refresh2(
+	cancelID, err = g.groupProvider.AsyncRefresh(
 		source,
 		clientTransactionID,
 	)
@@ -680,17 +748,17 @@ func (g *OPCGroup) AsyncRefresh(
 // AsyncCancel Request that the server cancel an outstanding transaction. An AsyncCancelComplete event will
 // occur indicating whether or not the cancel succeeded.
 func (g *OPCGroup) AsyncCancel(cancelID uint32) error {
-	if g == nil || g.asyncIO2 == nil {
+	if g == nil || g.groupProvider == nil {
 		return errors.New("uninitialized group")
 	}
-	return g.asyncIO2.Cancel2(cancelID)
+	return g.groupProvider.AsyncCancel(cancelID)
 }
 
 func (g *OPCGroup) getError(errorCode int32) error {
-	if g == nil || g.iCommon == nil {
+	if g == nil || g.provider == nil {
 		return &OPCError{ErrorCode: errorCode, ErrorMessage: "uninitialized common interface"}
 	}
-	errStr, _ := g.iCommon.GetErrorString(uint32(errorCode))
+	errStr, _ := g.provider.GetErrorString(uint32(errorCode))
 	return &OPCError{
 		ErrorCode:    errorCode,
 		ErrorMessage: errStr,

@@ -1,4 +1,4 @@
-//go:build windows && matrikon
+//go:build windows && integration && matrikon
 
 package opcda
 

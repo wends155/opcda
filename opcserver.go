@@ -14,15 +14,95 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-type OPCServer struct {
+type serverProvider interface {
+	GetStatus() (*com.ServerStatus, error)
+	GetErrorString(errorCode uint32) (string, error)
+	GetLocaleID() (uint32, error)
+	SetLocaleID(localeID uint32) error
+	SetClientName(clientName string) error
+	QueryAvailableLocaleIDs() ([]uint32, error)
+	QueryAvailableProperties(itemID string) ([]uint32, []string, []uint16, error)
+	GetItemProperties(itemID string, propertyIDs []uint32) ([]interface{}, []int32, error)
+	LookupItemIDs(itemID string, propertyIDs []uint32) ([]string, []int32, error)
+	AddGroup(name string, active bool, updateRate uint32, clientGroup uint32, timeBias *int32, deadband *float32, localeID uint32, iid *windows.GUID) (serverGroup uint32, revisedUpdateRate uint32, ppUnk *com.IUnknown, err error)
+	RemoveGroup(serverGroup uint32, force bool) error
+	Release()
+	QueryInterface(iid *windows.GUID, ppv unsafe.Pointer) error
+}
+
+type comServerProvider struct {
 	iServer       *com.IOPCServer
 	iCommon       *com.IOPCCommon
 	iItemProperty *com.IOPCItemProperties
-	groups        *OPCGroups
-	Name          string
-	Node          string
-	clientName    string
-	location      com.CLSCTX
+}
+
+func (p *comServerProvider) GetStatus() (*com.ServerStatus, error) {
+	return p.iServer.GetStatus()
+}
+
+func (p *comServerProvider) GetErrorString(errorCode uint32) (string, error) {
+	return p.iCommon.GetErrorString(errorCode)
+}
+
+func (p *comServerProvider) GetLocaleID() (uint32, error) {
+	return p.iCommon.GetLocaleID()
+}
+
+func (p *comServerProvider) SetLocaleID(localeID uint32) error {
+	return p.iCommon.SetLocaleID(localeID)
+}
+
+func (p *comServerProvider) SetClientName(clientName string) error {
+	return p.iCommon.SetClientName(clientName)
+}
+
+func (p *comServerProvider) QueryAvailableLocaleIDs() ([]uint32, error) {
+	return p.iCommon.QueryAvailableLocaleIDs()
+}
+
+func (p *comServerProvider) QueryAvailableProperties(itemID string) ([]uint32, []string, []uint16, error) {
+	return p.iItemProperty.QueryAvailableProperties(itemID)
+}
+
+func (p *comServerProvider) GetItemProperties(itemID string, propertyIDs []uint32) ([]interface{}, []int32, error) {
+	return p.iItemProperty.GetItemProperties(itemID, propertyIDs)
+}
+
+func (p *comServerProvider) LookupItemIDs(itemID string, propertyIDs []uint32) ([]string, []int32, error) {
+	return p.iItemProperty.LookupItemIDs(itemID, propertyIDs)
+}
+
+func (p *comServerProvider) AddGroup(name string, active bool, updateRate uint32, clientGroup uint32, timeBias *int32, deadband *float32, localeID uint32, iid *windows.GUID) (serverGroup uint32, revisedUpdateRate uint32, ppUnk *com.IUnknown, err error) {
+	return p.iServer.AddGroup(name, active, updateRate, clientGroup, timeBias, deadband, localeID, iid)
+}
+
+func (p *comServerProvider) RemoveGroup(serverGroup uint32, force bool) error {
+	return p.iServer.RemoveGroup(serverGroup, force)
+}
+
+func (p *comServerProvider) Release() {
+	if p.iItemProperty != nil {
+		p.iItemProperty.Release()
+	}
+	if p.iCommon != nil {
+		p.iCommon.Release()
+	}
+	if p.iServer != nil {
+		p.iServer.Release()
+	}
+}
+
+func (p *comServerProvider) QueryInterface(iid *windows.GUID, ppv unsafe.Pointer) error {
+	return p.iServer.QueryInterface(iid, ppv)
+}
+
+type OPCServer struct {
+	provider   serverProvider
+	groups     *OPCGroups
+	Name       string
+	Node       string
+	clientName string
+	location   com.CLSCTX
 
 	container *com.IConnectionPointContainer
 	point     *com.IConnectionPoint
@@ -73,46 +153,50 @@ func Connect(progID, node string) (opcServer *OPCServer, err error) {
 	common := &com.IOPCCommon{IUnknown: iUnknownCommon}
 	itemProperties := &com.IOPCItemProperties{IUnknown: iUnknownItemProperties}
 	opcServer = &OPCServer{
-		iServer:       server,
-		iCommon:       common,
-		iItemProperty: itemProperties,
-		Name:          progID,
-		Node:          node,
-		location:      location,
+		provider: &comServerProvider{
+			iServer:       server,
+			iCommon:       common,
+			iItemProperty: itemProperties,
+		},
+		Name:     progID,
+		Node:     node,
+		location: location,
 	}
 	opcServer.groups = NewOPCGroups(opcServer)
 	return opcServer, nil
 }
 
-func getClsID(progID, node string, location com.CLSCTX) (clsid *windows.GUID, err error) {
-	if location == com.CLSCTX_LOCAL_SERVER {
-		id, err := windows.GUIDFromString(progID)
-		if err != nil {
-			return nil, NewOPCWrapperError("windows.GUIDFromString", err)
-		}
-		return &id, nil
-	} else {
-		var errorList []error
-		// try get clsid from server list
-		clsid, err = getClsIDFromServerListV2(progID, node, location)
-		if err == nil {
-			return clsid, nil
-		}
-		errorList = append(errorList, fmt.Errorf("get clsid from server list v2 error: %v", err))
-		// try v1
-		clsid, err = getClsIDFromServerListV1(progID, node, location)
-		if err == nil {
-			return clsid, nil
-		}
-		errorList = append(errorList, fmt.Errorf("get clsid from server list v1 error: %v", err))
-		// try get clsid from windows reg
-		clsid, err = getClsIDFromReg(progID, node)
-		if err == nil {
-			return clsid, nil
-		}
-		errorList = append(errorList, fmt.Errorf("get clsid from reg error: %v", err))
-		return nil, errors.Join(errorList...)
+func newOPCServerWithProvider(provider serverProvider, name string, node string) *OPCServer {
+	s := &OPCServer{
+		provider: provider,
+		Name:     name,
+		Node:     node,
 	}
+	s.groups = NewOPCGroups(s)
+	return s
+}
+
+func getClsID(progID, node string, location com.CLSCTX) (clsid *windows.GUID, err error) {
+	var errorList []error
+	// try get clsid from server list
+	clsid, err = getClsIDFromServerListV2(progID, node, location)
+	if err == nil {
+		return clsid, nil
+	}
+	errorList = append(errorList, fmt.Errorf("get clsid from server list v2 error: %v", err))
+	// try v1
+	clsid, err = getClsIDFromServerListV1(progID, node, location)
+	if err == nil {
+		return clsid, nil
+	}
+	errorList = append(errorList, fmt.Errorf("get clsid from server list v1 error: %v", err))
+	// try get clsid from windows reg
+	clsid, err = getClsIDFromReg(progID, node)
+	if err == nil {
+		return clsid, nil
+	}
+	errorList = append(errorList, fmt.Errorf("get clsid from reg error: %v", err))
+	return nil, errors.Join(errorList...)
 }
 
 func getClsIDFromServerListV2(progID, node string, location com.CLSCTX) (*windows.GUID, error) {
@@ -275,12 +359,17 @@ func getServersFromOpcServerListV1(node string) ([]*ServerInfo, error) {
 
 func getServersFromReg(node string) ([]*ServerInfo, error) {
 	var result []*ServerInfo
+	var hKey registry.Key
 	var err error
-	hKey, err := registry.OpenRemoteKey(node, registry.CLASSES_ROOT)
-	if err != nil {
-		return nil, err
+	if node == "" || node == "localhost" {
+		hKey = registry.CLASSES_ROOT
+	} else {
+		hKey, err = registry.OpenRemoteKey(node, registry.CLASSES_ROOT)
+		if err != nil {
+			return nil, err
+		}
+		defer hKey.Close()
 	}
-	defer hKey.Close()
 	tsKeys, _ := hKey.ReadSubKeyNames(-1)
 	for _, tsKey := range tsKeys {
 		info := getServersFromKey(hKey, tsKey)
@@ -353,19 +442,19 @@ func getServerV1(sl *com.IOPCServerList, classID *windows.GUID) (*ServerInfo, er
 
 // GetLocaleID get locale ID
 func (s *OPCServer) GetLocaleID() (uint32, error) {
-	if s == nil || s.iCommon == nil {
+	if s == nil || s.provider == nil {
 		return 0, errors.New("uninitialized server connection")
 	}
-	localeID, err := s.iCommon.GetLocaleID()
+	localeID, err := s.provider.GetLocaleID()
 	return localeID, err
 }
 
 // GetStartTime Returns the time the server started running
 func (s *OPCServer) GetStartTime() (time.Time, error) {
-	if s == nil || s.iServer == nil {
+	if s == nil || s.provider == nil {
 		return time.Time{}, errors.New("uninitialized server connection")
 	}
-	status, err := s.iServer.GetStatus()
+	status, err := s.provider.GetStatus()
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -374,10 +463,10 @@ func (s *OPCServer) GetStartTime() (time.Time, error) {
 
 // GetCurrentTime Returns the current time from the server
 func (s *OPCServer) GetCurrentTime() (time.Time, error) {
-	if s == nil || s.iServer == nil {
+	if s == nil || s.provider == nil {
 		return time.Time{}, errors.New("uninitialized server connection")
 	}
-	status, err := s.iServer.GetStatus()
+	status, err := s.provider.GetStatus()
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -386,10 +475,10 @@ func (s *OPCServer) GetCurrentTime() (time.Time, error) {
 
 // GetLastUpdateTime Returns the last update time from the server
 func (s *OPCServer) GetLastUpdateTime() (time.Time, error) {
-	if s == nil || s.iServer == nil {
+	if s == nil || s.provider == nil {
 		return time.Time{}, errors.New("uninitialized server connection")
 	}
-	status, err := s.iServer.GetStatus()
+	status, err := s.provider.GetStatus()
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -398,10 +487,10 @@ func (s *OPCServer) GetLastUpdateTime() (time.Time, error) {
 
 // GetMajorVersion Returns the major part of the server version number
 func (s *OPCServer) GetMajorVersion() (uint16, error) {
-	if s == nil || s.iServer == nil {
+	if s == nil || s.provider == nil {
 		return 0, errors.New("uninitialized server connection")
 	}
-	status, err := s.iServer.GetStatus()
+	status, err := s.provider.GetStatus()
 	if err != nil {
 		return 0, err
 	}
@@ -410,10 +499,10 @@ func (s *OPCServer) GetMajorVersion() (uint16, error) {
 
 // GetMinorVersion Returns the minor part of the server version number
 func (s *OPCServer) GetMinorVersion() (uint16, error) {
-	if s == nil || s.iServer == nil {
+	if s == nil || s.provider == nil {
 		return 0, errors.New("uninitialized server connection")
 	}
-	status, err := s.iServer.GetStatus()
+	status, err := s.provider.GetStatus()
 	if err != nil {
 		return 0, err
 	}
@@ -422,10 +511,10 @@ func (s *OPCServer) GetMinorVersion() (uint16, error) {
 
 // GetBuildNumber Returns the build number of the server
 func (s *OPCServer) GetBuildNumber() (uint16, error) {
-	if s == nil || s.iServer == nil {
+	if s == nil || s.provider == nil {
 		return 0, errors.New("uninitialized server connection")
 	}
-	status, err := s.iServer.GetStatus()
+	status, err := s.provider.GetStatus()
 	if err != nil {
 		return 0, err
 	}
@@ -434,10 +523,10 @@ func (s *OPCServer) GetBuildNumber() (uint16, error) {
 
 // GetVendorInfo Returns the vendor information string for the server
 func (s *OPCServer) GetVendorInfo() (string, error) {
-	if s == nil || s.iServer == nil {
+	if s == nil || s.provider == nil {
 		return "", errors.New("uninitialized server connection")
 	}
-	status, err := s.iServer.GetStatus()
+	status, err := s.provider.GetStatus()
 	if err != nil {
 		return "", err
 	}
@@ -446,10 +535,10 @@ func (s *OPCServer) GetVendorInfo() (string, error) {
 
 // GetServerState Returns the server’s state
 func (s *OPCServer) GetServerState() (com.OPCServerState, error) {
-	if s == nil || s.iServer == nil {
+	if s == nil || s.provider == nil {
 		return 0, errors.New("uninitialized server connection")
 	}
-	status, err := s.iServer.GetStatus()
+	status, err := s.provider.GetStatus()
 	if err != nil {
 		return 0, err
 	}
@@ -458,18 +547,18 @@ func (s *OPCServer) GetServerState() (com.OPCServerState, error) {
 
 // SetLocaleID set locale ID
 func (s *OPCServer) SetLocaleID(localeID uint32) error {
-	if s == nil || s.iCommon == nil {
+	if s == nil || s.provider == nil {
 		return errors.New("uninitialized server connection")
 	}
-	return s.iCommon.SetLocaleID(localeID)
+	return s.provider.SetLocaleID(localeID)
 }
 
 // GetBandwidth Returns the bandwidth of the server
 func (s *OPCServer) GetBandwidth() (uint32, error) {
-	if s == nil || s.iServer == nil {
+	if s == nil || s.provider == nil {
 		return 0, errors.New("uninitialized server connection")
 	}
-	status, err := s.iServer.GetStatus()
+	status, err := s.provider.GetStatus()
 	if err != nil {
 		return 0, err
 	}
@@ -510,10 +599,10 @@ func (s *OPCServer) GetClientName() string {
 
 // SetClientName Sets the client name of the client
 func (s *OPCServer) SetClientName(clientName string) error {
-	if s == nil || s.iCommon == nil {
+	if s == nil || s.provider == nil {
 		return errors.New("uninitialized server connection")
 	}
-	err := s.iCommon.SetClientName(clientName)
+	err := s.provider.SetClientName(clientName)
 	if err != nil {
 		return err
 	}
@@ -530,7 +619,7 @@ type PropertyDescription struct {
 
 // CreateBrowser Creates an OPCBrowser object
 func (s *OPCServer) CreateBrowser() (*OPCBrowser, error) {
-	if s == nil || s.iServer == nil {
+	if s == nil || s.provider == nil {
 		return nil, errors.New("uninitialized server connection")
 	}
 	return NewOPCBrowser(s)
@@ -538,35 +627,35 @@ func (s *OPCServer) CreateBrowser() (*OPCBrowser, error) {
 
 // GetErrorString Converts an error number to a readable string
 func (s *OPCServer) GetErrorString(errorCode int32) (string, error) {
-	if s == nil || s.iCommon == nil {
+	if s == nil || s.provider == nil {
 		return "", errors.New("uninitialized server connection")
 	}
-	return s.iCommon.GetErrorString(uint32(errorCode))
+	return s.provider.GetErrorString(uint32(errorCode))
 }
 
 // QueryAvailableLocaleIDs Return the available LocaleIDs for this server/client session
 func (s *OPCServer) QueryAvailableLocaleIDs() ([]uint32, error) {
-	if s == nil || s.iCommon == nil {
+	if s == nil || s.provider == nil {
 		return nil, errors.New("uninitialized server connection")
 	}
-	return s.iCommon.QueryAvailableLocaleIDs()
+	return s.provider.QueryAvailableLocaleIDs()
 }
 
 // QueryAvailableProperties Return a list of ID codes and Descriptions for the available properties for this ItemID
 func (s *OPCServer) QueryAvailableProperties(itemID string) (pPropertyIDs []uint32, ppDescriptions []string, ppvtDataTypes []uint16, err error) {
-	if s == nil || s.iItemProperty == nil {
+	if s == nil || s.provider == nil {
 		return nil, nil, nil, errors.New("uninitialized server connection")
 	}
-	return s.iItemProperty.QueryAvailableProperties(itemID)
+	return s.provider.QueryAvailableProperties(itemID)
 }
 
 // GetItemProperties Return a list of the current data values for the passed ID codes.
 func (s *OPCServer) GetItemProperties(itemID string, propertyIDs []uint32) (data []interface{}, itemErrors []error, err error) {
-	if s == nil || s.iItemProperty == nil {
+	if s == nil || s.provider == nil {
 		return nil, nil, errors.New("uninitialized server connection")
 	}
 	var errs []int32
-	data, errs, err = s.iItemProperty.GetItemProperties(itemID, propertyIDs)
+	data, errs, err = s.provider.GetItemProperties(itemID, propertyIDs)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -577,10 +666,10 @@ func (s *OPCServer) GetItemProperties(itemID string, propertyIDs []uint32) (data
 // LookupItemIDs Return a list of ItemIDs (if available) for each of the passed ID codes.
 // have not tested because simulator return error
 func (s *OPCServer) LookupItemIDs(itemID string, propertyIDs []uint32) ([]string, []error, error) {
-	if s == nil || s.iItemProperty == nil {
+	if s == nil || s.provider == nil {
 		return nil, nil, errors.New("uninitialized server connection")
 	}
-	ItemIDs, errs, err := s.iItemProperty.LookupItemIDs(itemID, propertyIDs)
+	ItemIDs, errs, err := s.provider.LookupItemIDs(itemID, propertyIDs)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -604,7 +693,7 @@ func (s *OPCServer) errors(errs []int32) []error {
 
 // RegisterServerShutDown register server shut down event
 func (s *OPCServer) RegisterServerShutDown(ch chan string) error {
-	if s == nil || s.iServer == nil {
+	if s == nil || s.provider == nil {
 		return errors.New("uninitialized server connection")
 	}
 	if s.event == nil {
@@ -613,7 +702,7 @@ func (s *OPCServer) RegisterServerShutDown(ch chan string) error {
 		var point *com.IConnectionPoint
 		var cookie uint32
 
-		err = s.iServer.IUnknown.QueryInterface(&com.IID_IConnectionPointContainer, unsafe.Pointer(&iUnknownContainer))
+		err = s.provider.QueryInterface(&com.IID_IConnectionPointContainer, unsafe.Pointer(&iUnknownContainer))
 		if err != nil {
 			return NewOPCWrapperError("query interface IConnectionPointContainer", err)
 		}
@@ -662,14 +751,8 @@ func (s *OPCServer) Disconnect() error {
 	if s.groups != nil {
 		s.groups.Release()
 	}
-	if s.iItemProperty != nil {
-		s.iItemProperty.Release()
-	}
-	if s.iCommon != nil {
-		s.iCommon.Release()
-	}
-	if s.iServer != nil {
-		s.iServer.Release()
+	if s.provider != nil {
+		s.provider.Release()
 	}
 	return err
 }

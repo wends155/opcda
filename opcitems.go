@@ -12,9 +12,51 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+type itemMgtProvider interface {
+	AddItems(items []com.TagOPCITEMDEF) ([]com.TagOPCITEMRESULTStruct, []int32, error)
+	ValidateItems(items []com.TagOPCITEMDEF, bBlob bool) ([]com.TagOPCITEMRESULTStruct, []int32, error)
+	RemoveItems(serverHandles []uint32) ([]int32, error)
+	SetActiveState(serverHandles []uint32, bActive bool) ([]int32, error)
+	SetClientHandles(serverHandles []uint32, clientHandles []uint32) ([]int32, error)
+	SetDatatypes(serverHandles []uint32, requestedDataTypes []com.VT) ([]int32, error)
+	Release()
+}
+
+type comItemMgtProvider struct {
+	itemMgt *com.IOPCItemMgt
+}
+
+func (p *comItemMgtProvider) AddItems(items []com.TagOPCITEMDEF) ([]com.TagOPCITEMRESULTStruct, []int32, error) {
+	return p.itemMgt.AddItems(items)
+}
+
+func (p *comItemMgtProvider) ValidateItems(items []com.TagOPCITEMDEF, bBlob bool) ([]com.TagOPCITEMRESULTStruct, []int32, error) {
+	return p.itemMgt.ValidateItems(items, bBlob)
+}
+
+func (p *comItemMgtProvider) RemoveItems(serverHandles []uint32) ([]int32, error) {
+	return p.itemMgt.RemoveItems(serverHandles)
+}
+
+func (p *comItemMgtProvider) SetActiveState(serverHandles []uint32, bActive bool) ([]int32, error) {
+	return p.itemMgt.SetActiveState(serverHandles, bActive)
+}
+
+func (p *comItemMgtProvider) SetClientHandles(serverHandles []uint32, clientHandles []uint32) ([]int32, error) {
+	return p.itemMgt.SetClientHandles(serverHandles, clientHandles)
+}
+
+func (p *comItemMgtProvider) SetDatatypes(serverHandles []uint32, requestedDataTypes []com.VT) ([]int32, error) {
+	return p.itemMgt.SetDatatypes(serverHandles, requestedDataTypes)
+}
+
+func (p *comItemMgtProvider) Release() {
+	p.itemMgt.Release()
+}
+
 type OPCItems struct {
-	itemMgt                  *com.IOPCItemMgt
-	iCommon                  *com.IOPCCommon
+	itemMgtProvider          itemMgtProvider
+	provider                 serverProvider
 	parent                   *OPCGroup
 	itemID                   uint32
 	defaultRequestedDataType com.VT
@@ -26,16 +68,16 @@ type OPCItems struct {
 
 func NewOPCItems(
 	parent *OPCGroup,
-	itemMgt *com.IOPCItemMgt,
-	iCommon *com.IOPCCommon,
+	itemMgt itemMgtProvider,
+	provider serverProvider,
 ) *OPCItems {
 	return &OPCItems{
 		parent:                   parent,
-		itemMgt:                  itemMgt,
+		itemMgtProvider:          itemMgt,
 		defaultRequestedDataType: com.VT_EMPTY,
 		defaultAccessPath:        "",
 		defaultActive:            true,
-		iCommon:                  iCommon,
+		provider:                 provider,
 	}
 }
 
@@ -152,7 +194,7 @@ func (is *OPCItems) GetOPCItem(serverHandle uint32) (*OPCItem, error) {
 
 // AddItem adds an item to the group.
 func (is *OPCItems) AddItem(tag string) (*OPCItem, error) {
-	if is == nil || is.itemMgt == nil {
+	if is == nil || is.itemMgtProvider == nil {
 		return nil, errors.New("uninitialized items or failed group connection")
 	}
 	items, errs, err := is.AddItems([]string{tag})
@@ -167,7 +209,7 @@ func (is *OPCItems) AddItem(tag string) (*OPCItem, error) {
 
 // AddItems adds items to the group.
 func (is *OPCItems) AddItems(tags []string) ([]*OPCItem, []error, error) {
-	if is == nil || is.itemMgt == nil {
+	if is == nil || is.itemMgtProvider == nil {
 		return nil, nil, errors.New("uninitialized items or failed group connection")
 	}
 	is.Lock()
@@ -176,7 +218,7 @@ func (is *OPCItems) AddItems(tags []string) ([]*OPCItem, []error, error) {
 	active := is.defaultActive
 	dt := is.defaultRequestedDataType
 	items := is.createDefinitions(tags, accessPath, active, dt)
-	results, errs, err := is.itemMgt.AddItems(items)
+	results, errs, err := is.itemMgtProvider.AddItems(items)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -220,8 +262,8 @@ func (is *OPCItems) Remove(serverHandles []uint32) {
 	is.items = newItems
 
 	if len(removedHandles) > 0 {
-		if is.itemMgt != nil {
-			is.itemMgt.RemoveItems(removedHandles)
+		if is.itemMgtProvider != nil {
+			is.itemMgtProvider.RemoveItems(removedHandles)
 		}
 	}
 	for _, it := range removedItems {
@@ -231,7 +273,7 @@ func (is *OPCItems) Remove(serverHandles []uint32) {
 
 // Validate Determines if one or more OPCItems could be successfully created via the Add method (but does not add them).
 func (is *OPCItems) Validate(tags []string, requestedDataTypes *[]com.VT, accessPaths *[]string) ([]error, error) {
-	if is == nil || is.itemMgt == nil {
+	if is == nil || is.itemMgtProvider == nil {
 		return nil, errors.New("uninitialized items or failed group connection")
 	}
 	var definitions []com.TagOPCITEMDEF
@@ -254,7 +296,7 @@ func (is *OPCItems) Validate(tags []string, requestedDataTypes *[]com.VT, access
 		}
 		definitions = append(definitions, item)
 	}
-	_, errs, err := is.itemMgt.ValidateItems(definitions, false)
+	_, errs, err := is.itemMgtProvider.ValidateItems(definitions, false)
 	if err != nil {
 		return nil, err
 	}
@@ -335,8 +377,8 @@ func (is *OPCItems) Release() {
 	for _, item := range is.items {
 		item.Release()
 	}
-	if is.itemMgt != nil {
-		is.itemMgt.Release()
+	if is.itemMgtProvider != nil {
+		is.itemMgtProvider.Release()
 	}
 }
 
@@ -361,10 +403,10 @@ func (is *OPCItems) createDefinitions(tags []string, accessPath string, active b
 }
 
 func (is *OPCItems) getError(errorCode int32) error {
-	if is == nil || is.iCommon == nil {
+	if is == nil || is.provider == nil {
 		return &OPCError{ErrorCode: errorCode, ErrorMessage: "uninitialized common interface"}
 	}
-	errStr, _ := is.iCommon.GetErrorString(uint32(errorCode))
+	errStr, _ := is.provider.GetErrorString(uint32(errorCode))
 	return &OPCError{
 		ErrorCode:    errorCode,
 		ErrorMessage: errStr,

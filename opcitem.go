@@ -10,9 +10,9 @@ import (
 )
 
 type OPCItem struct {
-	itemMgt           *com.IOPCItemMgt
-	syncIO            *com.IOPCSyncIO
-	iCommon           *com.IOPCCommon
+	itemMgtProvider   itemMgtProvider
+	groupProvider     groupProvider
+	provider          serverProvider
 	value             interface{}
 	quality           uint16
 	timestamp         time.Time
@@ -45,10 +45,10 @@ func (i *OPCItem) GetClientHandle() uint32 {
 
 // SetClientHandle set the client handle for the item.
 func (i *OPCItem) SetClientHandle(clientHandle uint32) error {
-	if i == nil || i.itemMgt == nil {
+	if i == nil || i.itemMgtProvider == nil {
 		return errors.New("uninitialized item")
 	}
-	errs, err := i.itemMgt.SetClientHandles([]uint32{i.serverHandle}, []uint32{clientHandle})
+	errs, err := i.itemMgtProvider.SetClientHandles([]uint32{i.serverHandle}, []uint32{clientHandle})
 	if err != nil {
 		return err
 	}
@@ -109,10 +109,10 @@ func (i *OPCItem) GetRequestedDataType() com.VT {
 
 // SetRequestedDataType set the requested data type for the item.
 func (i *OPCItem) SetRequestedDataType(requestedDataType com.VT) error {
-	if i == nil || i.itemMgt == nil {
+	if i == nil || i.itemMgtProvider == nil {
 		return errors.New("uninitialized item")
 	}
-	errs, err := i.itemMgt.SetDatatypes([]uint32{i.serverHandle}, []com.VT{requestedDataType})
+	errs, err := i.itemMgtProvider.SetDatatypes([]uint32{i.serverHandle}, []com.VT{requestedDataType})
 	if err != nil {
 		return err
 	}
@@ -125,10 +125,10 @@ func (i *OPCItem) SetRequestedDataType(requestedDataType com.VT) error {
 
 // SetIsActive set the active state for the item.
 func (i *OPCItem) SetIsActive(isActive bool) error {
-	if i == nil || i.itemMgt == nil {
+	if i == nil || i.itemMgtProvider == nil {
 		return errors.New("uninitialized item")
 	}
-	errs, err := i.itemMgt.SetActiveState([]uint32{i.serverHandle}, isActive)
+	errs, err := i.itemMgtProvider.SetActiveState([]uint32{i.serverHandle}, isActive)
 	if err != nil {
 		return err
 	}
@@ -220,26 +220,26 @@ func NewOPCItem(
 	isActive bool,
 ) *OPCItem {
 	return &OPCItem{
-		itemMgt:        parent.itemMgt,
-		syncIO:         parent.parent.syncIO,
-		iCommon:        parent.iCommon,
-		parent:         parent,
-		tag:            tag,
-		accessPath:     accessPath,
-		serverHandle:   result.Server,
-		clientHandle:   clientHandle,
-		accessRights:   result.AccessRights,
-		nativeDataType: com.VT(result.NativeType),
-		isActive:       isActive,
+		itemMgtProvider: parent.itemMgtProvider,
+		groupProvider:   parent.parent.groupProvider,
+		provider:        parent.provider,
+		parent:          parent,
+		tag:             tag,
+		accessPath:      accessPath,
+		serverHandle:    result.Server,
+		clientHandle:    clientHandle,
+		accessRights:    result.AccessRights,
+		nativeDataType:  com.VT(result.NativeType),
+		isActive:        isActive,
 	}
 }
 
 // Read reads the value, quality and timestamp for the item.
 func (i *OPCItem) Read(source com.OPCDATASOURCE) (interface{}, uint16, time.Time, error) {
-	if i == nil || i.syncIO == nil {
+	if i == nil || i.groupProvider == nil {
 		return nil, 0, time.Time{}, errors.New("uninitialized item")
 	}
-	values, errs, err := i.syncIO.Read(source, []uint32{i.serverHandle})
+	values, errs, err := i.groupProvider.SyncRead(source, []uint32{i.serverHandle})
 	if err != nil {
 		return nil, 0, time.Time{}, err
 	}
@@ -254,7 +254,7 @@ func (i *OPCItem) Read(source com.OPCDATASOURCE) (interface{}, uint16, time.Time
 
 // Write writes a value to the item.
 func (i *OPCItem) Write(value interface{}) error {
-	if i == nil || i.syncIO == nil {
+	if i == nil || i.groupProvider == nil {
 		return errors.New("uninitialized item")
 	}
 	variant, err := com.NewVariant(value)
@@ -262,7 +262,7 @@ func (i *OPCItem) Write(value interface{}) error {
 		return err
 	}
 	defer variant.Clear()
-	errs, err := i.syncIO.Write([]uint32{i.serverHandle}, []com.VARIANT{*variant.Variant})
+	errs, err := i.groupProvider.SyncWrite([]uint32{i.serverHandle}, []com.VARIANT{*variant.Variant})
 	if err != nil {
 		return err
 	}
@@ -273,10 +273,10 @@ func (i *OPCItem) Write(value interface{}) error {
 }
 
 func (i *OPCItem) getError(errorCode int32) error {
-	if i == nil || i.iCommon == nil {
+	if i == nil || i.provider == nil {
 		return &OPCError{ErrorCode: errorCode, ErrorMessage: "uninitialized common interface"}
 	}
-	errStr, _ := i.iCommon.GetErrorString(uint32(errorCode))
+	errStr, _ := i.provider.GetErrorString(uint32(errorCode))
 	return &OPCError{
 		ErrorCode:    errorCode,
 		ErrorMessage: errStr,

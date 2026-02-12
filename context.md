@@ -31,9 +31,12 @@
 - **Impact**: Provides clearer guidance for developers implementing custom authentication for COM objects.
 - **Reference**: [PR #XX] Documenting COAUTHIDENTITY
 
-## Verification
+### Global Dependency Injection & Mocking (2026-02-12)
 
-7.  **2026-02-12 (DI & Mocking):** Refactored `OPCBrowser` to use an internal `browserAddressSpace` interface for Dependency Injection. Implemented `mockBrowserAddressSpace` to enable server-less unit testing. Added documented Go `Example` functions in `opcbrowser_test.go` and separated Matrikon-dependent tests using the `matrikon` build tag. Updated project rules in `GEMINI.md` to require detailed code examples in implementation plans.
+- **Change**: Refactored core components (`OPCServer`, `OPCGroup`, `OPCItems`, `OPCItem`, `OPCBrowser`) to use internal provider interfaces (`serverProvider`, `groupProvider`, `itemMgtProvider`). 
+- **Impact**: Decoupled high-level Go logic from physical COM implementations. Enabled pure unit testing with mocks in `*_test.go` and migrated live server tests to `*_integration_test.go`.
+- **Registry Fix**: Resolved "Access is denied" when connecting to local servers by using local `registry.CLASSES_ROOT` instead of `OpenRemoteKey("localhost", ...)`.
+- **Benefit**: CI/CD can now verify core logic without requiring initialized Windows COM or specialized OPC simulators.
 
 ### 🧩 Active Components & APIs
 * `opcda`: Core Go package.
@@ -50,12 +53,9 @@
 * **Pointer Safety:** Standardized `unsafe.Pointer` conversions around syscalls to use direct `syscall.Syscall` and immediate casting, ensuring compatibility with Go's static analysis tools and preventing pointer tracking failures.
 * **Error Handling Strategy:** Moved from `panic`-driven error handling to explicit `error` returns. `VARIANT.Value()` signature was updated to `(interface{}, error)` to allow graceful handling of date and array conversion failures, preventing runtime crashes in production environments.
 * **Defensive API (Nil-Safety):** Implemented defensive nil-receiver checks across all public `opcda` methods to ensure that calls on zero-initialized or failed connection objects return a structured error instead of a segmentation fault.
-* **Dependency Injection & Implicit Interfaces:** Learned that refactoring for DI in Go can be done without modifying downstream packages (like `com`) by using implicit interface satisfaction. This maintains library stability while increasing testability.
-* **Mocking for Environment Independence:** Using mocks for external COM dependencies allows for the creation of `Example` functions that serve as live documentation in `godoc` while remaining fully runnable as unit tests in CI environments.
-* **Builder-Oriented Planning:** Recognizing that detailed implementation plans with embedded code snippets are critical for the Builder role (Gemini 3 Flash) to maintain surgical precision and avoid architectural drift during execution.
-* **Build-Tag Driven Test Isolation:** Adopted `//go:build matrikon` to isolate integration tests, ensuring the core test suite remains "Always Passing" and server-agnostic.
-* **Dependency Injection for Testability:** Adopted a DI pattern for `OPCBrowser` using implicit Go interfaces. This decouples the high-level browser logic from the physical COM implementation without requiring changes to the low-level `com` package.
-* **Test Isolation Strategy:** Use build tags (`//go:build matrikon`) to isolate integration tests that require specific external hardware/software. This ensures the default `go test ./...` command remains fast and environment-agnostic while still allowing for full integration coverage.
+* **Structural DI via Implicit Interfaces**: Successfully refactored the entire library to support DI without modifying the `com` package. This was achieved by defining internal interfaces that wrap COM methods, allowing for physical COM interaction in production and mocked behaviors in tests.
+* **Universal Test Isolation**: Established a clear separation between Unit tests (mocked, fast, always passing) and Integration tests (requires real OPC server). Integration tests are now in separate files and can be targeted specifically, while `go test ./...` remains a reliable indicator of code health.
+* **Defensive Registry Access**: Implemented logic to detect "localhost" in node names and use the local registry API directly, bypassing permissions issues inherent in remote registry calls on local systems.
 
 ---
 

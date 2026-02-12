@@ -35,11 +35,11 @@ type OPCBrowser struct {
 }
 
 func NewOPCBrowser(parent *OPCServer) (*OPCBrowser, error) {
-	if parent == nil || parent.iServer == nil {
+	if parent == nil || parent.provider == nil {
 		return nil, errors.New("parent server is nil or uninitialized")
 	}
 	var iBrowseServerAddressSpace *com.IUnknown
-	err := parent.iServer.QueryInterface(&com.IID_IOPCBrowseServerAddressSpace, unsafe.Pointer(&iBrowseServerAddressSpace))
+	err := parent.provider.QueryInterface(&com.IID_IOPCBrowseServerAddressSpace, unsafe.Pointer(&iBrowseServerAddressSpace))
 	if err != nil {
 		return nil, NewOPCWrapperError("query interface IOPCBrowseServerAddressSpace", err)
 	}

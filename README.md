@@ -20,6 +20,8 @@ This is an OPC DA client written in Go language, allowing you to communicate wit
 - Asynchronously write tag values
 - Subscribe to real-time data changes of tags
 - **Robustness**: Defensive nil-checks and error handling to prevent runtime panics.
+- **Dependency Injection**: Decoupled architecture for improved testability and mocking.
+- **Zero-Dependency Testing**: Pure unit tests using mocks, runnable in any environment.
 
 ## Prerequisites
 
@@ -121,15 +123,16 @@ All APIs can be found in the [API documentation](https://pkg.go.dev/github.com/w
 This project uses a combination of mock-based unit tests and server-dependent integration tests.
 
 ### Unit Tests (Mocks)
-The core library, including the `OPCBrowser`, is refactored to support Dependency Injection. Unit tests use mocks and can be run without an OPC server:
+Pure unit tests that use mock providers to simulate OPC server behavior. These tests are fast and do not require any COM initialization or external simulators.
 ```shell
-go test -v ./...
+go test -v .
 ```
 
 ### Integration Tests
-Tests that require a live OPC server (e.g., Matrikon Simulation Server) are protected by build tags. To run these tests:
+Tests that interact with live OPC servers or the local Windows registry. These are isolated in `*_integration_test.go` files. Some may require specialized software like the Matrikon OPC Simulation Server.
 ```shell
-go test -v -tags matrikon ./...
+# Run all tests (including integration if environment allows)
+go test -v ./...
 ```
 
 ### Documentation Examples
