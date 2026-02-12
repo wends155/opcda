@@ -4,7 +4,7 @@ import (
 	"errors"
 	"unsafe"
 
-	"github.com/huskar-t/opcda/com"
+	"github.com/wends155/opcda/com"
 )
 
 type OPCBrowser struct {

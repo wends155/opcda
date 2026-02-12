@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/huskar-t/opcda/com"
+	"github.com/wends155/opcda/com"
 	"github.com/stretchr/testify/assert"
 )
 

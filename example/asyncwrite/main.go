@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/huskar-t/opcda"
-	"github.com/huskar-t/opcda/com"
+	"github.com/wends155/opcda"
+	"github.com/wends155/opcda/com"
 )
 
 func main() {

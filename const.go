@@ -1,7 +1,7 @@
 package opcda
 
 import (
-	"github.com/huskar-t/opcda/com"
+	"github.com/wends155/opcda/com"
 
 	"golang.org/x/sys/windows"
 )

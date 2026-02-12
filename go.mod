@@ -1,4 +1,4 @@
-module github.com/huskar-t/opcda
+module github.com/wends155/opcda
 
 go 1.20
 

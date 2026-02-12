@@ -1,9 +1,9 @@
 # Go OPC DA Client
 
-[![OPC_DA_WIN](https://github.com/huskar-t/opcda/actions/workflows/test.yaml/badge.svg)](https://github.com/huskar-t/opcda/actions/workflows/test.yaml)
+[![OPC_DA_WIN](https://github.com/wends155/opcda/actions/workflows/test.yaml/badge.svg)](https://github.com/wends155/opcda/actions/workflows/test.yaml)
 [![codecov](https://codecov.io/gh/huskar-t/opcda/graph/badge.svg?token=12QCJ69ZXQ)](https://codecov.io/gh/huskar-t/opcda)
-[![Go Report Card](https://goreportcard.com/badge/github.com/huskar-t/opcda)](https://goreportcard.com/report/github.com/huskar-t/opcda)
-[![Go Reference](https://pkg.go.dev/badge/github.com/huskar-t/opcda.svg)](https://pkg.go.dev/github.com/huskar-t/opcda)
+[![Go Report Card](https://goreportcard.com/badge/github.com/wends155/opcda)](https://goreportcard.com/report/github.com/wends155/opcda)
+[![Go Reference](https://pkg.go.dev/badge/github.com/wends155/opcda.svg)](https://pkg.go.dev/github.com/wends155/opcda)
 
 English | [简体中文](README-CN.md)
 
@@ -36,7 +36,7 @@ Before using this client, make sure you meet the following prerequisites:
 Use the following command to install this client:
 
 ```shell
-go get github.com/huskar-t/opcda
+go get github.com/wends155/opcda
 ```
 
 ## Types
@@ -86,7 +86,7 @@ Other types are not currently supported.
 
 ## API Documentation
 
-All APIs can be found in the [API documentation](https://pkg.go.dev/github.com/huskar-t/opcda).
+All APIs can be found in the [API documentation](https://pkg.go.dev/github.com/wends155/opcda).
 
 ## Why Choose This Client
 

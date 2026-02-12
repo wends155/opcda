@@ -7,7 +7,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/huskar-t/opcda/com"
+	"github.com/wends155/opcda/com"
 )
 
 type OPCGroup struct {
