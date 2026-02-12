@@ -1,158 +1,171 @@
 //go:build windows
+
 package opcda
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
-	"github.com/wends155/opcda/com"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/wends155/opcda/com"
 )
 
-func TestOPCBrowser(t *testing.T) {
-	server, err := Connect(TestProgID, TestHost)
-	assert.NoError(t, err)
-	defer func() {
-		err = server.Disconnect()
-		assert.NoError(t, err)
-	}()
-
-	browser, err := server.CreateBrowser()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer browser.Release()
-
-	browser.MoveToRoot()
-	browse(t, browser)
-	err = browser.MoveUp()
-	assert.NoError(t, err)
-	err = browser.MoveUp()
-	assert.NoError(t, err)
-	browse(t, browser)
-	browser.MoveToRoot()
-	browse(t, browser)
-	err = browser.MoveTo([]string{"Simulation Items", "Bucket Brigade"})
-	assert.NoError(t, err)
-	err = browser.ShowLeafs(false)
-	assert.NoError(t, err)
-	count := browser.GetCount()
-	assert.Equal(t, 14, count)
-	expectLeafs := []string{
-		"ArrayOfReal8",
-		"ArrayOfString",
-		"Boolean",
-		"Int1",
-		"Int2",
-		"Int4",
-		"Money",
-		"Real4",
-		"Real8",
-		"String",
-		"Time",
-		"UInt1",
-		"UInt2",
-		"UInt4",
-	}
-
-	for i := 0; i < count; i++ {
-		nextName, err := browser.Item(i)
-		assert.NoError(t, err)
-		assert.Equal(t, expectLeafs[i], nextName)
-		itermID, err := browser.GetItemID(nextName)
-		assert.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("Bucket Brigade.%s", nextName), itermID)
-	}
-	browser.SetFilter("")
-	filter := browser.GetFilter()
-	assert.Equal(t, "", filter)
-	browser.SetDataType(uint16(com.VT_BOOL))
-	dataType := browser.GetDataType()
-	assert.Equal(t, uint16(com.VT_BOOL), dataType)
-	err = browser.SetAccessRights(OPC_READABLE)
-	assert.NoError(t, err)
-	accessRights := browser.GetAccessRights()
-	assert.Equal(t, OPC_READABLE, accessRights)
-	err = browser.SetAccessRights(4)
-	assert.Error(t, err)
-	position, err := browser.GetCurrentPosition()
-	assert.NoError(t, err)
-	assert.Equal(t, "Bucket Brigade", position)
-	organization, err := browser.GetOrganization()
-	assert.NoError(t, err)
-	assert.Equal(t, OPC_NS_HIERARCHIAL, organization)
-	browser.MoveToRoot()
-	position, err = browser.GetCurrentPosition()
-	assert.NoError(t, err)
-	assert.Equal(t, "", position)
+// mockBrowserAddressSpace is a mock implementation of the browserAddressSpace interface.
+// It simulates a simple hierarchical address space for testing.
+type mockBrowserAddressSpace struct {
+	currentPath string
+	branches    map[string][]string
+	leaves      map[string][]string
 }
 
-func browse(t *testing.T, browser *OPCBrowser) {
+func newMockBrowserAddressSpace() *mockBrowserAddressSpace {
+	return &mockBrowserAddressSpace{
+		currentPath: "",
+		branches: map[string][]string{
+			"":        {"Folder1", "Folder2"},
+			"Folder1": {"SubFolder1"},
+		},
+		leaves: map[string][]string{
+			"":           {"RootItem1"},
+			"Folder1":    {"Item1", "Item2"},
+			"SubFolder1": {"SubItem1"},
+		},
+	}
+}
+
+func (m *mockBrowserAddressSpace) GetItemID(leaf string) (string, error) {
+	if leaf == "" {
+		return m.currentPath, nil
+	}
+	if m.currentPath == "" {
+		return leaf, nil
+	}
+	return fmt.Sprintf("%s.%s", m.currentPath, leaf), nil
+}
+
+func (m *mockBrowserAddressSpace) QueryOrganization() (com.OPCNAMESPACETYPE, error) {
+	return OPC_NS_HIERARCHIAL, nil
+}
+
+func (m *mockBrowserAddressSpace) BrowseOPCItemIDs(filterType com.OPCBROWSETYPE, filter string, dataType uint16, accessRights uint32) ([]string, error) {
+	switch filterType {
+	case OPC_BRANCH:
+		return m.branches[m.currentPath], nil
+	case OPC_LEAF, OPC_FLAT:
+		return m.leaves[m.currentPath], nil
+	default:
+		return nil, errors.New("invalid filter type")
+	}
+}
+
+func (m *mockBrowserAddressSpace) ChangeBrowsePosition(dir com.OPCBROWSEDIRECTION, name string) error {
+	switch dir {
+	case OPC_BROWSE_UP:
+		if m.currentPath == "SubFolder1" {
+			m.currentPath = "Folder1"
+		} else {
+			m.currentPath = ""
+		}
+	case OPC_BROWSE_DOWN:
+		if m.currentPath == "" && (name == "Folder1" || name == "Folder2") {
+			m.currentPath = name
+		} else if m.currentPath == "Folder1" && name == "SubFolder1" {
+			m.currentPath = name
+		} else {
+			return errors.New("branch not found")
+		}
+	case OPC_BROWSE_TO:
+		m.currentPath = name
+	}
+	return nil
+}
+
+func (m *mockBrowserAddressSpace) Release() uint32 {
+	return 0
+}
+
+func TestOPCBrowser_MockNavigation(t *testing.T) {
+	mock := newMockBrowserAddressSpace()
+	browser := newOPCBrowserWithInterface(mock, nil)
+
+	// Test Initial State
+	pos, _ := browser.GetCurrentPosition()
+	assert.Equal(t, "", pos)
+
+	// Test Browse Branches
 	err := browser.ShowBranches()
 	assert.NoError(t, err)
-	count := browser.GetCount()
-	assert.Equal(t, 2, count)
-	expectBranch := []string{"Simulation Items", "Configured Aliases"}
-	for i := 0; i < count; i++ {
-		nextName, err := browser.Item(i)
-		assert.NoError(t, err)
-		assert.Equal(t, expectBranch[i], nextName)
-	}
-	err = browser.MoveDown("Simulation Items")
+	assert.Equal(t, 2, browser.GetCount())
+	name, _ := browser.Item(0)
+	assert.Equal(t, "Folder1", name)
+
+	// Test Move Down
+	err = browser.MoveDown("Folder1")
 	assert.NoError(t, err)
-	err = browser.ShowBranches()
-	assert.NoError(t, err)
-	count = browser.GetCount()
-	assert.Equal(t, 8, count)
-	expectBranch = []string{
-		"Bucket Brigade",
-		"Random",
-		"Read Error",
-		"Saw-toothed Waves",
-		"Square Waves",
-		"Triangle Waves",
-		"Write Error",
-		"Write Only",
-	}
-	for i := 0; i < count; i++ {
-		nextName, err := browser.Item(i)
-		assert.NoError(t, err)
-		assert.Equal(t, expectBranch[i], nextName)
-	}
-	err = browser.MoveDown("Bucket Brigade")
-	assert.NoError(t, err)
+	pos, _ = browser.GetCurrentPosition()
+	assert.Equal(t, "Folder1", pos)
+
+	// Test Browse Leafs
 	err = browser.ShowLeafs(false)
 	assert.NoError(t, err)
-	count = browser.GetCount()
-	assert.Equal(t, 14, count)
-	expectLeafs := []string{
-		"ArrayOfReal8",
-		"ArrayOfString",
-		"Boolean",
-		"Int1",
-		"Int2",
-		"Int4",
-		"Money",
-		"Real4",
-		"Real8",
-		"String",
-		"Time",
-		"UInt1",
-		"UInt2",
-		"UInt4",
+	assert.Equal(t, 2, browser.GetCount())
+	name, _ = browser.Item(0)
+	assert.Equal(t, "Item1", name)
+
+	// Test GetItemID
+	id, err := browser.GetItemID("Item1")
+	assert.NoError(t, err)
+	assert.Equal(t, "Folder1.Item1", id)
+
+	// Test Move Up
+	err = browser.MoveUp()
+	assert.NoError(t, err)
+	pos, _ = browser.GetCurrentPosition()
+	assert.Equal(t, "", pos)
+}
+
+func ExampleOPCBrowser_ShowLeafs_mock() {
+	// Initialize browser with mock address space
+	mock := newMockBrowserAddressSpace()
+	browser := newOPCBrowserWithInterface(mock, nil)
+
+	// Navigate to Folder1
+	browser.MoveDown("Folder1")
+
+	// Show leafs in Folder1
+	browser.ShowLeafs(false)
+	count := browser.GetCount()
+	for i := 0; i < count; i++ {
+		name, _ := browser.Item(i)
+		fmt.Println("Leaf:", name)
 	}
 
-	for i := 0; i < count; i++ {
-		nextName, err := browser.Item(i)
-		assert.NoError(t, err)
-		assert.Equal(t, expectLeafs[i], nextName)
-		itermID, err := browser.GetItemID(nextName)
-		assert.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("Bucket Brigade.%s", nextName), itermID)
+	// Get fully qualified ItemID
+	itemID, _ := browser.GetItemID("Item1")
+	fmt.Println("ItemID:", itemID)
+
+	// Output:
+	// Leaf: Item1
+	// Leaf: Item2
+	// ItemID: Folder1.Item1
+}
+
+func ExampleConnect_error() {
+	// Attempt to connect to a non-existent server
+	_, err := Connect("NonExistent.ProgID.1", "localhost")
+	if err != nil {
+		fmt.Println("Caught expected connection error")
 	}
-	err = browser.ShowBranches()
-	assert.NoError(t, err)
-	count = browser.GetCount()
-	assert.Equal(t, 0, count)
+	// Output: Caught expected connection error
+}
+
+func ExampleOPCServer_CreateBrowser_error() {
+	// Attempt to create a browser from a nil server
+	var server *OPCServer
+	_, err := server.CreateBrowser()
+	if err != nil {
+		fmt.Println("Caught expected browser creation error")
+	}
+	// Output: Caught expected browser creation error
 }

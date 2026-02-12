@@ -9,8 +9,24 @@ import (
 	"github.com/wends155/opcda/com"
 )
 
+// browserAddressSpace defines the methods required for browsing OPC item IDs.
+// It abstracts the underlying COM implementation (com.IOPCBrowseServerAddressSpace)
+// to enable unit testing and mocking.
+//
+// Example usage in tests:
+//
+//	mock := &mockBrowserAddressSpace{}
+//	browser := &OPCBrowser{iBrowseServerAddressSpace: mock}
+type browserAddressSpace interface {
+	GetItemID(szItemDataID string) (string, error)
+	QueryOrganization() (com.OPCNAMESPACETYPE, error)
+	BrowseOPCItemIDs(dwBrowseFilterType com.OPCBROWSETYPE, szFilterCriteria string, vtDataTypeFilter uint16, dwAccessRightsFilter uint32) ([]string, error)
+	ChangeBrowsePosition(dwBrowseDirection com.OPCBROWSEDIRECTION, szString string) error
+	Release() uint32
+}
+
 type OPCBrowser struct {
-	iBrowseServerAddressSpace *com.IOPCBrowseServerAddressSpace
+	iBrowseServerAddressSpace browserAddressSpace
 	filter                    string
 	dataType                  uint16
 	accessRights              uint32
@@ -27,11 +43,15 @@ func NewOPCBrowser(parent *OPCServer) (*OPCBrowser, error) {
 	if err != nil {
 		return nil, NewOPCWrapperError("query interface IOPCBrowseServerAddressSpace", err)
 	}
+	return newOPCBrowserWithInterface(&com.IOPCBrowseServerAddressSpace{IUnknown: iBrowseServerAddressSpace}, parent), nil
+}
+
+func newOPCBrowserWithInterface(i browserAddressSpace, parent *OPCServer) *OPCBrowser {
 	return &OPCBrowser{
-		iBrowseServerAddressSpace: &com.IOPCBrowseServerAddressSpace{IUnknown: iBrowseServerAddressSpace},
+		iBrowseServerAddressSpace: i,
 		parent:                    parent,
 		accessRights:              OPC_READABLE | OPC_WRITEABLE,
-	}, nil
+	}
 }
 
 // GetFilter get the filter that applies to ShowBranches and ShowLeafs methods

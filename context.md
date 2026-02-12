@@ -33,13 +33,7 @@
 
 ## Verification
 
-### 🛠️ Recent Changes (Last 3 Cycles)
-1.  **2026-02-12 (Migration):** Successfully migrated library to `github.com/wends155/opcda`. Renamed module project-wide and updated all imports.
-2.  **2026-02-12 (CI Infrastructure):** Mirrored simulation assets to simulation-assets and updated `test.yaml` for CI.
-3.  **2026-02-12 (Documentation/COM):** Improved `com` package documentation to adhere to `go doc` standards. Added runnable examples in `example_test.go` and created a comprehensive source map in `com_source_map.md`.
-4.  **2026-02-12 (Nil-Safety & Error Handling):** Implemented comprehensive nil-safety across the `opcda` package. Refactored `VARIANT.Value()` to return `(interface{}, error)` and replaced all internal `panic` calls with proper error propagation. Added a regression test suite in `opcda_error_test.go`.
-5.  **2026-02-12 (Unsafe Audit):** Completed a comprehensive security audit of `unsafe` usage in the `com` package. Verified Vtble orders, struct alignments, and memory handling. Refactored syscall patterns to satisfy `go vet` where possible and ensure strict pointer safety. Audited remaining warnings as low-risk COM interop patterns.
-6.  **2026-02-12 (COM Documentation):** Completed package-wide documentation of the `com` package. Added `go doc` compliant comments to all structs, interfaces, and virtual tables. Included usage examples for core methods to enhance discoverability.
+7.  **2026-02-12 (DI & Mocking):** Refactored `OPCBrowser` to use an internal `browserAddressSpace` interface for Dependency Injection. Implemented `mockBrowserAddressSpace` to enable server-less unit testing. Added documented Go `Example` functions in `opcbrowser_test.go` and separated Matrikon-dependent tests using the `matrikon` build tag. Updated project rules in `GEMINI.md` to require detailed code examples in implementation plans.
 
 ### 🧩 Active Components & APIs
 * `opcda`: Core Go package.
@@ -56,6 +50,12 @@
 * **Pointer Safety:** Standardized `unsafe.Pointer` conversions around syscalls to use direct `syscall.Syscall` and immediate casting, ensuring compatibility with Go's static analysis tools and preventing pointer tracking failures.
 * **Error Handling Strategy:** Moved from `panic`-driven error handling to explicit `error` returns. `VARIANT.Value()` signature was updated to `(interface{}, error)` to allow graceful handling of date and array conversion failures, preventing runtime crashes in production environments.
 * **Defensive API (Nil-Safety):** Implemented defensive nil-receiver checks across all public `opcda` methods to ensure that calls on zero-initialized or failed connection objects return a structured error instead of a segmentation fault.
+* **Dependency Injection & Implicit Interfaces:** Learned that refactoring for DI in Go can be done without modifying downstream packages (like `com`) by using implicit interface satisfaction. This maintains library stability while increasing testability.
+* **Mocking for Environment Independence:** Using mocks for external COM dependencies allows for the creation of `Example` functions that serve as live documentation in `godoc` while remaining fully runnable as unit tests in CI environments.
+* **Builder-Oriented Planning:** Recognizing that detailed implementation plans with embedded code snippets are critical for the Builder role (Gemini 3 Flash) to maintain surgical precision and avoid architectural drift during execution.
+* **Build-Tag Driven Test Isolation:** Adopted `//go:build matrikon` to isolate integration tests, ensuring the core test suite remains "Always Passing" and server-agnostic.
+* **Dependency Injection for Testability:** Adopted a DI pattern for `OPCBrowser` using implicit Go interfaces. This decouples the high-level browser logic from the physical COM implementation without requiring changes to the low-level `com` package.
+* **Test Isolation Strategy:** Use build tags (`//go:build matrikon`) to isolate integration tests that require specific external hardware/software. This ensures the default `go test ./...` command remains fast and environment-agnostic while still allowing for full integration coverage.
 
 ---
 

@@ -7,7 +7,7 @@
 * **Responsibility:**
     * **Analyze** Go/COM interactions (`golang.org/x/sys/windows`).
     * **Investigate** OPC connectivity errors using `godoc` and `context7`.
-    * **Create** detailed, step-by-step implementation plans.
+    * **Create** detailed, step-by-step implementation plans. Plans **MUST** include code snippets and concrete examples to provide clear context for the **Builder**.
     * **Define** the verification strategy.
 
 ### 2. The Builder (Gemini 3 Flash)
