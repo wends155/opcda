@@ -1,3 +1,4 @@
+//go:build windows
 package com
 
 type VT uint16

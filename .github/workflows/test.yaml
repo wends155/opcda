@@ -26,7 +26,7 @@ jobs:
 
       - name: install core components
         run: |
-          Start-BitsTransfer -Source https://github.com/wends155/opcdatest/releases/download/simulation/OPC.Core.Components.Redistributable.x64.3.00.108.msi
+          Start-BitsTransfer -Source https://github.com/wends155/opcda/releases/download/simulation-assets/OPC.Core.Components.Redistributable.x64.3.00.108.msi
           msiexec /norestart /i "OPC.Core.Components.Redistributable.x64.3.00.108.msi"
 
       - name: Get absolute directory path
@@ -38,7 +38,7 @@ jobs:
 
       - name: install da simulator
         run: |
-          Start-BitsTransfer -Source https://github.com/wends155/opcdatest/releases/download/simulation/MatrikonOPCSimulation.exe
+          Start-BitsTransfer -Source https://github.com/wends155/opcda/releases/download/simulation-assets/MatrikonOPCSimulation.exe
           Start-Process -Wait -FilePath MatrikonOPCSimulation.exe -ArgumentList '/S' -PassThru
 
       - name: start da simulator

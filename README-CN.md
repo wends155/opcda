@@ -1,7 +1,7 @@
 # Go OPC DA 客户端
 
 [![OPC_DA_WIN](https://github.com/wends155/opcda/actions/workflows/test.yaml/badge.svg)](https://github.com/wends155/opcda/actions/workflows/test.yaml)
-[![codecov](https://codecov.io/gh/huskar-t/opcda/graph/badge.svg?token=12QCJ69ZXQ)](https://codecov.io/gh/huskar-t/opcda)
+[![codecov](https://codecov.io/gh/wends155/opcda/graph/badge.svg?token=TODO)](https://codecov.io/gh/wends155/opcda)
 [![Go Report Card](https://goreportcard.com/badge/github.com/wends155/opcda)](https://goreportcard.com/report/github.com/wends155/opcda)
 [![Go Reference](https://pkg.go.dev/badge/github.com/wends155/opcda.svg)](https://pkg.go.dev/github.com/wends155/opcda)
 
