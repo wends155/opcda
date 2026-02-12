@@ -61,7 +61,8 @@
 ---
 
 ## 🧪 Tooling & Scripts
-* **code-index (MCP)**: In-memory symbol indexer.
+* **code-index (MCP)**: ✅ **Verified**. Configured for `c:\Users\WSALIGAN\code\opcda`. Advanced search and deep indexing functional.
+* **go-analyzer (MCP)**: ✅ **Verified**. Successfully detecting workspace via `go.work`. Diagnostics and symbol search functional.
 * **git-mcp (MCP)**: Automated version control.
 * **context7 (MCP)**: Documentation queries for OPC DA/Automation specs.
 * **Go Toolchain**: `go test`, `go fmt`, `go vet`.
