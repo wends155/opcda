@@ -7,7 +7,7 @@
 ## 🏗️ System Overview
 * **Goal:** Standalone Go-based OPC DA client library (migrated to `wends155/opcda`).
 * **Core Stack:** Go 1.20+, `golang.org/x/sys/windows` (COM/OLE).
-* **Architecture Pattern:** Go wrapper around OPC DA Automation interfaces, providing an idiomatic Go API for industrial data access. See [architecture.md](file:///c:/Users/WSALIGAN/code/opcda/architecture.md) for deep technical details.
+* **Architecture Pattern:** Go wrapper around OPC DA Automation interfaces, providing an idiomatic Go API for industrial data access. See [architecture.md](file:///c:/Users/WSALIGAN/code/opcda/architecture.md) for deep technical details and [com_source_map.md](file:///c:/Users/WSALIGAN/code/opcda/com/com_source_map.md) for an overview of the low-level communication package.
 
 ---
 
@@ -37,11 +37,12 @@
 1.  **2026-02-12 (Migration):** Successfully migrated library to `github.com/wends155/opcda`. Renamed module project-wide and updated all imports.
 2.  **2026-02-12 (CI Infrastructure):** Mirrored simulation assets to simulation-assets and updated `test.yaml` for CI.
 3.  **2026-02-12 (Documentation/COM):** Improved `com` package documentation to adhere to `go doc` standards. Added runnable examples in `example_test.go` and created a comprehensive source map in `com_source_map.md`.
+4.  **2026-02-12 (Unsafe Audit):** Completed a comprehensive security audit of `unsafe` usage in the `com` package. Verified Vtble orders, struct alignments, and memory handling. Refactored syscall patterns to satisfy `go vet` and ensure strict pointer safety.
 
 ### 🧩 Active Components & APIs
 * `opcda`: Core Go package.
     * `OPCServer`: Main struct for connecting to OPC servers.
-* `com`: Low-level COM wrapper package. Updated with standardized doc comments: `// SymbolName [Action/Purpose]. Example: [Usage Example].`
+* `com`: Low-level COM wrapper package. Detailed in [com_source_map.md](file:///c:/Users/WSALIGAN/code/opcda/com/com_source_map.md). Updated with standardized doc comments and pointer safety patterns.
 
 ---
 
@@ -50,11 +51,12 @@
 
 * **Transition to Go:** The project is a Go implementation of the OPC DA client, diverging from the legacy Python-based OpenOPC model.
 * **Documentation Standard:** Adopted a consistent doc comment pattern for COM interfaces to improve readability and internal API discoverability via `go doc`.
+* **Pointer Safety:** Standardized `unsafe.Pointer` conversions around syscalls to use direct `syscall.Syscall` and immediate casting, ensuring compatibility with Go's static analysis tools and preventing pointer tracking failures.
 
 ---
 
 ## 🚧 Technical Debt & Pending Logic
-* **Next Steps:** Complete the documentation and examples for the high-level `opcda` package to match the quality of the `com` package.
+* **Next Steps:** Extend the audit to and performance benchmarks to verify the impact of the high-level `opcda` logic on COM stability under heavy load.
 
 ---
 

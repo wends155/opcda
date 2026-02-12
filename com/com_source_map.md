@@ -45,3 +45,9 @@ classDiagram
 - **`SafeArray`**: Used for passing arrays of data.
 - **`IUnknown`**: The base interface for all COM objects.
 - **`ItemState`**: A unified struct representing the value, quality, and timestamp of an OPC item.
+
+## Pointer Safety & Syscalls
+
+The package utilizes `unsafe.Pointer` for COM interop. To ensure compatibility with Go's `go vet` tool and runtime safety:
+- **Immediate Casting**: `uintptr` results from syscalls are cast to `unsafe.Pointer` immediately to ensure the compiler can track the pointer's origin.
+- **Standardized Patterns**: Functions like `SysAllocStringLen` use `syscall.Syscall` directly for better static analysis tracking compared to `proc.Call`.
