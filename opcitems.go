@@ -1,4 +1,5 @@
 //go:build windows
+
 package opcda
 
 import (
@@ -40,26 +41,41 @@ func NewOPCItems(
 
 // GetParent Returns reference to the parent OPCGroup object
 func (is *OPCItems) GetParent() *OPCGroup {
+	if is == nil {
+		return nil
+	}
 	return is.parent
 }
 
 // GetDefaultRequestedDataType get the requested data type that will be used in calls to Add
 func (is *OPCItems) GetDefaultRequestedDataType() com.VT {
+	if is == nil {
+		return com.VT_EMPTY
+	}
 	return is.defaultRequestedDataType
 }
 
 // SetDefaultRequestedDataType set the requested data type that will be used in calls to Add
 func (is *OPCItems) SetDefaultRequestedDataType(defaultRequestedDataType com.VT) {
+	if is == nil {
+		return
+	}
 	is.defaultRequestedDataType = defaultRequestedDataType
 }
 
 // GetDefaultAccessPath get the default AccessPath that will be used in calls to Add
 func (is *OPCItems) GetDefaultAccessPath() string {
+	if is == nil {
+		return ""
+	}
 	return is.defaultAccessPath
 }
 
 // SetDefaultAccessPath set the default AccessPath that will be used in calls to Add
 func (is *OPCItems) SetDefaultAccessPath(defaultAccessPath string) {
+	if is == nil {
+		return
+	}
 	is.Lock()
 	defer is.Unlock()
 	is.defaultAccessPath = defaultAccessPath
@@ -67,21 +83,35 @@ func (is *OPCItems) SetDefaultAccessPath(defaultAccessPath string) {
 
 // GetDefaultActive get the default active state for OPCItems created using Items.Add
 func (is *OPCItems) GetDefaultActive() bool {
+	if is == nil {
+		return false
+	}
 	return is.defaultActive
 }
 
 // SetDefaultActive set the default active state for OPCItems created using Items.Add
 func (is *OPCItems) SetDefaultActive(defaultActive bool) {
+	if is == nil {
+		return
+	}
 	is.defaultActive = defaultActive
 }
 
 // GetCount get the number of items in the collection
 func (is *OPCItems) GetCount() int {
+	if is == nil {
+		return 0
+	}
+	is.RLock()
+	defer is.RUnlock()
 	return len(is.items)
 }
 
 // Item get the item by index
 func (is *OPCItems) Item(index int32) (*OPCItem, error) {
+	if is == nil {
+		return nil, errors.New("uninitialized items")
+	}
 	is.RLock()
 	defer is.RUnlock()
 	if index < 0 || index >= int32(len(is.items)) {
@@ -92,6 +122,9 @@ func (is *OPCItems) Item(index int32) (*OPCItem, error) {
 
 // ItemByName get the item by name
 func (is *OPCItems) ItemByName(name string) (*OPCItem, error) {
+	if is == nil {
+		return nil, errors.New("uninitialized items")
+	}
 	is.RLock()
 	defer is.RUnlock()
 	for _, v := range is.items {
@@ -104,6 +137,9 @@ func (is *OPCItems) ItemByName(name string) (*OPCItem, error) {
 
 // GetOPCItem returns the OPCItem by serverHandle
 func (is *OPCItems) GetOPCItem(serverHandle uint32) (*OPCItem, error) {
+	if is == nil {
+		return nil, errors.New("uninitialized items")
+	}
 	is.RLock()
 	defer is.RUnlock()
 	for _, v := range is.items {
@@ -116,6 +152,9 @@ func (is *OPCItems) GetOPCItem(serverHandle uint32) (*OPCItem, error) {
 
 // AddItem adds an item to the group.
 func (is *OPCItems) AddItem(tag string) (*OPCItem, error) {
+	if is == nil || is.itemMgt == nil {
+		return nil, errors.New("uninitialized items or failed group connection")
+	}
 	items, errs, err := is.AddItems([]string{tag})
 	if err != nil {
 		return nil, err
@@ -128,6 +167,9 @@ func (is *OPCItems) AddItem(tag string) (*OPCItem, error) {
 
 // AddItems adds items to the group.
 func (is *OPCItems) AddItems(tags []string) ([]*OPCItem, []error, error) {
+	if is == nil || is.itemMgt == nil {
+		return nil, nil, errors.New("uninitialized items or failed group connection")
+	}
 	is.Lock()
 	defer is.Unlock()
 	accessPath := is.defaultAccessPath
@@ -154,6 +196,9 @@ func (is *OPCItems) AddItems(tags []string) ([]*OPCItem, []error, error) {
 
 // Remove Removes an OPCItem
 func (is *OPCItems) Remove(serverHandles []uint32) {
+	if is == nil {
+		return
+	}
 	is.Lock()
 	defer is.Unlock()
 	toDelete := make(map[uint32]struct{}, len(serverHandles))
@@ -175,7 +220,9 @@ func (is *OPCItems) Remove(serverHandles []uint32) {
 	is.items = newItems
 
 	if len(removedHandles) > 0 {
-		is.itemMgt.RemoveItems(removedHandles)
+		if is.itemMgt != nil {
+			is.itemMgt.RemoveItems(removedHandles)
+		}
 	}
 	for _, it := range removedItems {
 		it.Release()
@@ -184,6 +231,9 @@ func (is *OPCItems) Remove(serverHandles []uint32) {
 
 // Validate Determines if one or more OPCItems could be successfully created via the Add method (but does not add them).
 func (is *OPCItems) Validate(tags []string, requestedDataTypes *[]com.VT, accessPaths *[]string) ([]error, error) {
+	if is == nil || is.itemMgt == nil {
+		return nil, errors.New("uninitialized items or failed group connection")
+	}
 	var definitions []com.TagOPCITEMDEF
 	for i, v := range tags {
 		cHandle := atomic.AddUint32(&is.itemID, 1)
@@ -219,6 +269,9 @@ func (is *OPCItems) Validate(tags []string, requestedDataTypes *[]com.VT, access
 
 // SetActive Allows Activation and deactivation of individual OPCItem’s in the OPCItems Collection
 func (is *OPCItems) SetActive(serverHandles []uint32, active bool) []error {
+	if is == nil {
+		return nil
+	}
 	resultErrors := make([]error, len(serverHandles))
 	for i, handle := range serverHandles {
 		item, err := is.GetOPCItem(handle)
@@ -236,6 +289,9 @@ func (is *OPCItems) SetActive(serverHandles []uint32, active bool) []error {
 
 // SetClientHandles Changes the client handles or one or more Items in a Group.
 func (is *OPCItems) SetClientHandles(serverHandles []uint32, clientHandles []uint32) []error {
+	if is == nil {
+		return nil
+	}
 	resultErrors := make([]error, len(serverHandles))
 	for i, handle := range serverHandles {
 		item, err := is.GetOPCItem(handle)
@@ -253,6 +309,9 @@ func (is *OPCItems) SetClientHandles(serverHandles []uint32, clientHandles []uin
 
 // SetDataTypes Changes the requested data type for one or more Items
 func (is *OPCItems) SetDataTypes(serverHandles []uint32, requestedDataTypes []com.VT) []error {
+	if is == nil {
+		return nil
+	}
 	resultErrors := make([]error, len(serverHandles))
 	for i, handle := range serverHandles {
 		item, err := is.GetOPCItem(handle)
@@ -270,14 +329,22 @@ func (is *OPCItems) SetDataTypes(serverHandles []uint32, requestedDataTypes []co
 
 // Release Releases the OPCItems collection and all associated resources.
 func (is *OPCItems) Release() {
+	if is == nil {
+		return
+	}
 	for _, item := range is.items {
 		item.Release()
 	}
-	is.itemMgt.Release()
+	if is.itemMgt != nil {
+		is.itemMgt.Release()
+	}
 }
 
 func (is *OPCItems) createDefinitions(tags []string, accessPath string, active bool, requestedDataType com.VT) []com.TagOPCITEMDEF {
 	var definitions []com.TagOPCITEMDEF
+	if is == nil {
+		return nil
+	}
 	for _, v := range tags {
 		cHandle := atomic.AddUint32(&is.itemID, 1)
 		definitions = append(definitions, com.TagOPCITEMDEF{
@@ -294,6 +361,9 @@ func (is *OPCItems) createDefinitions(tags []string, accessPath string, active b
 }
 
 func (is *OPCItems) getError(errorCode int32) error {
+	if is == nil || is.iCommon == nil {
+		return &OPCError{ErrorCode: errorCode, ErrorMessage: "uninitialized common interface"}
+	}
 	errStr, _ := is.iCommon.GetErrorString(uint32(errorCode))
 	return &OPCError{
 		ErrorCode:    errorCode,

@@ -19,6 +19,7 @@ This is an OPC DA client written in Go language, allowing you to communicate wit
 - Synchronously write tag values
 - Asynchronously write tag values
 - Subscribe to real-time data changes of tags
+- **Robustness**: Defensive nil-checks and error handling to prevent runtime panics.
 
 ## Prerequisites
 
@@ -113,4 +114,4 @@ All APIs can be found in the [API documentation](https://pkg.go.dev/github.com/w
 
 3. Memory leaks
 
-   This client uses COM interfaces, and memory release has been handled internally, with fatigue testing done for all supported types. However, if memory leak issues are found during use, you can submit an issue and provide reproduction steps.
+   This client uses COM interfaces, and memory release has been handled internally, with fatigue testing done for all supported types. All public methods are guarded with defensive nil-checks to return errors gracefully instead of panicking on uninitialized objects.

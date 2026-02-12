@@ -19,65 +19,68 @@ func (v *VARIANT) IsArray() bool {
 	return v.VT&VT_ARRAY == VT_ARRAY
 }
 
-// Value returns the value held by the VARIANT as a Go interface{}.
+// Value returns the value held by the VARIANT as a Go interface{} and an error if conversion fails.
 // It handles basic types, strings, dates, and arrays.
 //
 // Example:
 //
-//	val := v.Value()
+//	val, err := v.Value()
+//	if err != nil {
+//		// handle error
+//	}
 //	fmt.Printf("Value is %v\n", val)
 //
 //gocyclo:ignore
-func (v *VARIANT) Value() interface{} {
+func (v *VARIANT) Value() (interface{}, error) {
 	if v.VT == VT_EMPTY || v.VT == VT_NULL {
-		return nil
+		return nil, nil
 	}
 	if v.IsArray() {
-		safeArray := (*SafeArray)(unsafe.Pointer(uintptr(v.Val)))
+		safeArray := *(**SafeArray)(unsafe.Pointer(&v.Val))
 		values, err := safeArray.ToValueArray()
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
-		return values
+		return values, nil
 	}
 	switch v.VT {
 	case VT_I1:
-		return int8(v.Val)
+		return int8(v.Val), nil
 	case VT_UI1:
-		return uint8(v.Val)
+		return uint8(v.Val), nil
 	case VT_I2:
-		return int16(v.Val)
+		return int16(v.Val), nil
 	case VT_UI2:
-		return uint16(v.Val)
+		return uint16(v.Val), nil
 	case VT_I4:
-		return int32(v.Val)
+		return int32(v.Val), nil
 	case VT_UI4:
-		return uint32(v.Val)
+		return uint32(v.Val), nil
 	case VT_I8:
-		return int64(v.Val)
+		return int64(v.Val), nil
 	case VT_UI8:
-		return uint64(v.Val)
+		return uint64(v.Val), nil
 	case VT_INT:
-		return int(v.Val)
+		return int(v.Val), nil
 	case VT_UINT:
-		return uint(v.Val)
+		return uint(v.Val), nil
 	case VT_R4:
-		return *(*float32)(unsafe.Pointer(&v.Val))
+		return *(*float32)(unsafe.Pointer(&v.Val)), nil
 	case VT_R8:
-		return *(*float64)(unsafe.Pointer(&v.Val))
+		return *(*float64)(unsafe.Pointer(&v.Val)), nil
 	case VT_BSTR:
-		return windows.UTF16PtrToString(*(**uint16)(unsafe.Pointer(&v.Val)))
+		return windows.UTF16PtrToString(*(**uint16)(unsafe.Pointer(&v.Val))), nil
 	case VT_DATE:
 		d := uint64(v.Val)
 		date, err := GetVariantDate(d)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
-		return date
+		return date, nil
 	case VT_BOOL:
-		return (v.Val & 0xffff) != 0
+		return (v.Val & 0xffff) != 0, nil
 	}
-	return nil
+	return nil, nil
 }
 
 // VariantWrapper wraps a VARIANT and provides helper methods for setting and clearing values.

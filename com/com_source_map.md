@@ -11,7 +11,7 @@ The `com` package abstracts Windows COM interfaces using `golang.org/x/sys/windo
 | File | Purpose |
 | :--- | :--- |
 | [com.go](file:///c:/Users/WSALIGAN/code/opcda/com/com.go) | Core COM initialization, `IUnknown`, and base utilities. |
-| [variant.go](file:///c:/Users/WSALIGAN/code/opcda/com/variant.go) | OLE Automation `VARIANT` handling and conversion to Go types. |
+| [variant.go](file:///c:/Users/WSALIGAN/code/opcda/com/variant.go) | OLE Automation `VARIANT` handling. `Value()` now returns `(interface{}, error)` for safe conversion. |
 | [safearray.go](file:///c:/Users/WSALIGAN/code/opcda/com/safearray.go) | `SafeArray` handling for array data types. |
 | [IOPCServer.go](file:///c:/Users/WSALIGAN/code/opcda/com/IOPCServer.go) | `IOPCServer` interface for server-level operations. |
 | [IOPCItemMgt.go](file:///c:/Users/WSALIGAN/code/opcda/com/IOPCItemMgt.go) | `IOPCItemMgt` interface for group and item management. |

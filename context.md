@@ -37,7 +37,8 @@
 1.  **2026-02-12 (Migration):** Successfully migrated library to `github.com/wends155/opcda`. Renamed module project-wide and updated all imports.
 2.  **2026-02-12 (CI Infrastructure):** Mirrored simulation assets to simulation-assets and updated `test.yaml` for CI.
 3.  **2026-02-12 (Documentation/COM):** Improved `com` package documentation to adhere to `go doc` standards. Added runnable examples in `example_test.go` and created a comprehensive source map in `com_source_map.md`.
-4.  **2026-02-12 (Unsafe Audit):** Completed a comprehensive security audit of `unsafe` usage in the `com` package. Verified Vtble orders, struct alignments, and memory handling. Refactored syscall patterns to satisfy `go vet` and ensure strict pointer safety.
+4.  **2026-02-12 (Nil-Safety & Error Handling):** Implemented comprehensive nil-safety across the `opcda` package. Refactored `VARIANT.Value()` to return `(interface{}, error)` and replaced all internal `panic` calls with proper error propagation. Added a regression test suite in `opcda_error_test.go`.
+5.  **2026-02-12 (Unsafe Audit):** Completed a comprehensive security audit of `unsafe` usage in the `com` package. Verified Vtble orders, struct alignments, and memory handling. Refactored syscall patterns to satisfy `go vet` where possible and ensure strict pointer safety. Audited remaining warnings as low-risk COM interop patterns.
 
 ### 🧩 Active Components & APIs
 * `opcda`: Core Go package.
@@ -52,11 +53,13 @@
 * **Transition to Go:** The project is a Go implementation of the OPC DA client, diverging from the legacy Python-based OpenOPC model.
 * **Documentation Standard:** Adopted a consistent doc comment pattern for COM interfaces to improve readability and internal API discoverability via `go doc`.
 * **Pointer Safety:** Standardized `unsafe.Pointer` conversions around syscalls to use direct `syscall.Syscall` and immediate casting, ensuring compatibility with Go's static analysis tools and preventing pointer tracking failures.
+* **Error Handling Strategy:** Moved from `panic`-driven error handling to explicit `error` returns. `VARIANT.Value()` signature was updated to `(interface{}, error)` to allow graceful handling of date and array conversion failures, preventing runtime crashes in production environments.
+* **Defensive API (Nil-Safety):** Implemented defensive nil-receiver checks across all public `opcda` methods to ensure that calls on zero-initialized or failed connection objects return a structured error instead of a segmentation fault.
 
 ---
 
 ## 🚧 Technical Debt & Pending Logic
-* **Next Steps:** Extend the audit to and performance benchmarks to verify the impact of the high-level `opcda` logic on COM stability under heavy load.
+* **Next Steps:** Investigate performance benchmarks to verify the impact of the high-level `opcda` logic on COM stability under heavy load.
 
 ---
 
@@ -67,3 +70,15 @@
 * **context7 (MCP)**: Documentation queries for OPC DA/Automation specs.
 * **Go Toolchain**: `go test`, `go fmt`, `go vet`.
 * **godoc (MCP)**: Preferred tool for internal API and architectural exploration. Use `mcp_godoc_get_doc` for concise package/symbol summaries.
+
+---
+
+## 📊 MCP Tool Usability Assessment (2026-02-12)
+
+| Tool Category | Usability Findings |
+| :--- | :--- |
+| **Architecture Exploration** | `go-analyzer` and `mcp_godoc_get_doc` are most effective for mapping COM Vtble layouts and resolving cross-package dependencies. |
+| **Semantic Search** | MCP tools provide a critical "semantic bridge" for finding unexported symbols or complex dependency chains that standard `grep` misses. |
+| **Search Reliability** | Standard `grep`/`ls` remain faster for high-frequency "sanity checks" due to zero latency. |
+| **Platform Constraints** | `code-index` may encounter friction on Windows (BusyBox) if internal search flags (e.g., `--exclude-dir`) are unsupported by the host grep. |
+| **Overall Verdict** | MCP tools are "surgical" and best used for deep architectural work, while terminal tools are "broad" and best for quick navigation. |

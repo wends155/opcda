@@ -1,4 +1,5 @@
 //go:build windows
+
 package opcda
 
 import (
@@ -24,6 +25,9 @@ type OPCGroups struct {
 }
 
 func NewOPCGroups(opcServer *OPCServer) *OPCGroups {
+	if opcServer == nil {
+		return nil
+	}
 	return &OPCGroups{
 		parent:                 opcServer,
 		iServer:                opcServer.iServer,
@@ -38,61 +42,97 @@ func NewOPCGroups(opcServer *OPCServer) *OPCGroups {
 
 // GetParent Returns reference to the parent OPCServer object.
 func (gs *OPCGroups) GetParent() *OPCServer {
+	if gs == nil {
+		return nil
+	}
 	return gs.parent
 }
 
 // GetDefaultGroupIsActive get the default active state for OPCGroups created using Groups.Add
 func (gs *OPCGroups) GetDefaultGroupIsActive() bool {
+	if gs == nil {
+		return false
+	}
 	return gs.defaultActive
 }
 
 // SetDefaultGroupIsActive set the default active state for OPCGroups created using Groups.Add
 func (gs *OPCGroups) SetDefaultGroupIsActive(defaultActive bool) {
+	if gs == nil {
+		return
+	}
 	gs.defaultActive = defaultActive
 }
 
 // GetDefaultGroupUpdateRate get the default update rate (in milliseconds) for OPCGroups created using Groups.Add
 func (gs *OPCGroups) GetDefaultGroupUpdateRate() uint32 {
+	if gs == nil {
+		return 0
+	}
 	return gs.defaultGroupUpdateRate
 }
 
 // SetDefaultGroupUpdateRate set the default update rate (in milliseconds) for OPCGroups created using Groups.Add
 func (gs *OPCGroups) SetDefaultGroupUpdateRate(defaultGroupUpdateRate uint32) {
+	if gs == nil {
+		return
+	}
 	gs.defaultGroupUpdateRate = defaultGroupUpdateRate
 }
 
 // GetDefaultGroupDeadband get the default deadband for OPCGroups created using Groups.Add
 func (gs *OPCGroups) GetDefaultGroupDeadband() float32 {
+	if gs == nil {
+		return 0
+	}
 	return gs.defaultDeadband
 }
 
 // SetDefaultGroupDeadband set the default deadband for OPCGroups created using Groups.Add
 func (gs *OPCGroups) SetDefaultGroupDeadband(defaultDeadband float32) {
+	if gs == nil {
+		return
+	}
 	gs.defaultDeadband = defaultDeadband
 }
 
 // GetDefaultGroupLocaleID get the default locale for OPCGroups created using Groups.Add.
 func (gs *OPCGroups) GetDefaultGroupLocaleID() uint32 {
+	if gs == nil {
+		return 0
+	}
 	return gs.defaultLocaleID
 }
 
 // SetDefaultGroupLocaleID set the default locale for OPCGroups created using Groups.Add.
 func (gs *OPCGroups) SetDefaultGroupLocaleID(defaultLocaleID uint32) {
+	if gs == nil {
+		return
+	}
 	gs.defaultLocaleID = defaultLocaleID
 }
 
 // GetDefaultGroupTimeBias get the default time bias for OPCGroups created using Groups.Add.
 func (gs *OPCGroups) GetDefaultGroupTimeBias() int32 {
+	if gs == nil {
+		return 0
+	}
 	return gs.defaultGroupTimeBias
 }
 
 // SetDefaultGroupTimeBias set the default time bias for OPCGroups created using Groups.Add.
 func (gs *OPCGroups) SetDefaultGroupTimeBias(defaultGroupTimeBias int32) {
+	if gs == nil {
+		return
+	}
 	gs.defaultGroupTimeBias = defaultGroupTimeBias
 }
 
 // GetCount Required property for collections.
 func (gs *OPCGroups) GetCount() int {
+	if gs == nil {
+		return 0
+	}
 	gs.RLock()
 	defer gs.RUnlock()
 	return len(gs.groups)
@@ -100,6 +140,9 @@ func (gs *OPCGroups) GetCount() int {
 
 // Item Returns an OPCGroup by ItemSpecifier. ItemSpecifier is the name or 0-based index into the collection
 func (gs *OPCGroups) Item(index int32) (*OPCGroup, error) {
+	if gs == nil {
+		return nil, errors.New("uninitialized groups")
+	}
 	gs.RLock()
 	defer gs.RUnlock()
 	if index < 0 || index >= int32(len(gs.groups)) {
@@ -110,6 +153,9 @@ func (gs *OPCGroups) Item(index int32) (*OPCGroup, error) {
 
 // ItemByName Returns an OPCGroup by name
 func (gs *OPCGroups) ItemByName(name string) (*OPCGroup, error) {
+	if gs == nil {
+		return nil, errors.New("uninitialized groups")
+	}
 	gs.RLock()
 	defer gs.RUnlock()
 	for _, v := range gs.groups {
@@ -122,6 +168,9 @@ func (gs *OPCGroups) ItemByName(name string) (*OPCGroup, error) {
 
 // Add Creates a new OPCGroup object and adds it to the collections
 func (gs *OPCGroups) Add(szName string) (*OPCGroup, error) {
+	if gs == nil || gs.iServer == nil {
+		return nil, errors.New("uninitialized groups or failed server connection")
+	}
 	gs.Lock()
 	defer gs.Unlock()
 	hClientGroup := atomic.AddUint32(&gs.groupID, 1)
@@ -149,11 +198,17 @@ func (gs *OPCGroups) Add(szName string) (*OPCGroup, error) {
 
 // GetOPCGroupByName Returns an OPCGroup by name
 func (gs *OPCGroups) GetOPCGroupByName(name string) (*OPCGroup, error) {
+	if gs == nil {
+		return nil, errors.New("uninitialized groups")
+	}
 	return gs.ItemByName(name)
 }
 
 // GetOPCGroup Returns an OPCGroup by server handle
 func (gs *OPCGroups) GetOPCGroup(serverHandle uint32) (*OPCGroup, error) {
+	if gs == nil {
+		return nil, errors.New("uninitialized groups")
+	}
 	gs.RLock()
 	defer gs.RUnlock()
 	for _, v := range gs.groups {
@@ -166,6 +221,9 @@ func (gs *OPCGroups) GetOPCGroup(serverHandle uint32) (*OPCGroup, error) {
 
 // Remove Removes an OPCGroup from the collection
 func (gs *OPCGroups) Remove(serverHandle uint32) error {
+	if gs == nil {
+		return errors.New("uninitialized groups")
+	}
 	gs.Lock()
 	defer gs.Unlock()
 	for i, v := range gs.groups {
@@ -183,11 +241,17 @@ func (gs *OPCGroups) Remove(serverHandle uint32) error {
 }
 
 func (gs *OPCGroups) doRemove(serverHandle uint32) error {
+	if gs == nil || gs.iServer == nil {
+		return errors.New("uninitialized groups or failed server connection")
+	}
 	return gs.iServer.RemoveGroup(serverHandle, true)
 }
 
 // RemoveByName Removes an OPCGroup from the collection by name
 func (gs *OPCGroups) RemoveByName(name string) error {
+	if gs == nil {
+		return errors.New("uninitialized groups")
+	}
 	gs.Lock()
 	defer gs.Unlock()
 	for i, v := range gs.groups {
@@ -206,6 +270,9 @@ func (gs *OPCGroups) RemoveByName(name string) error {
 
 // RemoveAll Removes all OPCGroups from the collection
 func (gs *OPCGroups) RemoveAll() error {
+	if gs == nil {
+		return nil
+	}
 	gs.Lock()
 	defer gs.Unlock()
 	for _, v := range gs.groups {
@@ -218,6 +285,9 @@ func (gs *OPCGroups) RemoveAll() error {
 
 // Release Releases the resources used by the collection and the items it contains.
 func (gs *OPCGroups) Release() error {
+	if gs == nil {
+		return nil
+	}
 	for _, group := range gs.groups {
 		group.Release()
 	}

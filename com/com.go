@@ -178,11 +178,14 @@ func safeArrayGetElement(safeArray *SafeArray, index int32, pv unsafe.Pointer) (
 //
 //	bstr := com.SysAllocStringLen("Hello")
 //	defer com.SysFreeString(bstr)
-func SysAllocStringLen(v string) (ss *uint16) {
+func SysAllocStringLen(v string) *uint16 {
 	u := windows.StringToUTF16(v)
-	pss, _, _ := procSysAllocStringLen.Call(uintptr(unsafe.Pointer(&u[0])), uintptr(len(u)-1))
-	ss = (*uint16)(unsafe.Pointer(pss))
-	return
+	r0, _, _ := syscall.SyscallN(
+		procSysAllocStringLen.Addr(),
+		uintptr(unsafe.Pointer(&u[0])),
+		uintptr(len(u)-1),
+	)
+	return (*uint16)(unsafe.Pointer(r0))
 }
 
 func safeArrayCreateVector(variantType VT, lowerBound int32, length uint32) (safearray *SafeArray, err error) {
@@ -192,11 +195,14 @@ func safeArrayCreateVector(variantType VT, lowerBound int32, length uint32) (saf
 		uintptr(lowerBound),
 		uintptr(length),
 	)
-	if !errors.Is(err, windows.ERROR_SUCCESS) {
-		return nil, err
+	p0 := unsafe.Pointer(r0)
+	if p0 == nil {
+		if !errors.Is(err, windows.ERROR_SUCCESS) {
+			return nil, err
+		}
+		return nil, syscall.EINVAL
 	}
-	safearray = (*SafeArray)(unsafe.Pointer(r0))
-	return safearray, nil
+	return (*SafeArray)(p0), nil
 }
 
 func safeArrayPutElement(safearray *SafeArray, index int64, element uintptr) (err error) {

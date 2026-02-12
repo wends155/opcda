@@ -1,8 +1,10 @@
 //go:build windows
+
 package opcda
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -43,6 +45,9 @@ func NewOPCGroup(
 	groupName string,
 	revisedUpdateRate uint32,
 ) (*OPCGroup, error) {
+	if iUnknown == nil {
+		return nil, errors.New("nil interface")
+	}
 	var iUnknownSyncIO *com.IUnknown
 	err := iUnknown.QueryInterface(&com.IID_IOPCSyncIO, unsafe.Pointer(&iUnknownSyncIO))
 	if err != nil {
@@ -79,16 +84,25 @@ func NewOPCGroup(
 
 // GetParent Returns reference to the parent OPCServer object
 func (g *OPCGroup) GetParent() *OPCGroups {
+	if g == nil {
+		return nil
+	}
 	return g.parent
 }
 
 // GetName Returns the name of the group
 func (g *OPCGroup) GetName() string {
+	if g == nil {
+		return ""
+	}
 	return g.groupName
 }
 
 // SetName set the name of the group
 func (g *OPCGroup) SetName(name string) error {
+	if g == nil || g.groupStateMgt == nil {
+		return errors.New("uninitialized group")
+	}
 	err := g.groupStateMgt.SetName(name)
 	if err != nil {
 		return err
@@ -99,6 +113,9 @@ func (g *OPCGroup) SetName(name string) error {
 
 // GetIsActive Returns whether the group is active
 func (g *OPCGroup) GetIsActive() bool {
+	if g == nil || g.groupStateMgt == nil {
+		return false
+	}
 	_, b, _, _, _, _, _, _, err := g.groupStateMgt.GetState()
 	if err != nil {
 		return false
@@ -108,6 +125,9 @@ func (g *OPCGroup) GetIsActive() bool {
 
 // SetIsActive set whether the group is active
 func (g *OPCGroup) SetIsActive(isActive bool) error {
+	if g == nil || g.groupStateMgt == nil {
+		return errors.New("uninitialized group")
+	}
 	v := com.BoolToComBOOL(isActive)
 	_, err := g.groupStateMgt.SetState(nil, &v, nil, nil, nil, nil)
 	return err
@@ -115,11 +135,17 @@ func (g *OPCGroup) SetIsActive(isActive bool) error {
 
 // GetClientHandle get a Long value associated with the group
 func (g *OPCGroup) GetClientHandle() uint32 {
+	if g == nil {
+		return 0
+	}
 	return g.clientGroupHandle
 }
 
 // SetClientHandle set a Long value associated with the group
 func (g *OPCGroup) SetClientHandle(clientHandle uint32) error {
+	if g == nil || g.groupStateMgt == nil {
+		return errors.New("uninitialized group")
+	}
 	_, err := g.groupStateMgt.SetState(nil, nil, nil, nil, nil, &clientHandle)
 	if err != nil {
 		return err
@@ -130,41 +156,62 @@ func (g *OPCGroup) SetClientHandle(clientHandle uint32) error {
 
 // GetServerHandle get the server assigned handle for the group
 func (g *OPCGroup) GetServerHandle() uint32 {
+	if g == nil {
+		return 0
+	}
 	return g.serverGroupHandle
 }
 
 // GetLocaleID get the locale identifier for the group
 func (g *OPCGroup) GetLocaleID() (uint32, error) {
+	if g == nil || g.groupStateMgt == nil {
+		return 0, errors.New("uninitialized group")
+	}
 	_, _, _, _, _, localeID, _, _, err := g.groupStateMgt.GetState()
 	return localeID, err
 }
 
 // SetLocaleID set the locale identifier for the group
 func (g *OPCGroup) SetLocaleID(id uint32) error {
+	if g == nil || g.groupStateMgt == nil {
+		return errors.New("uninitialized group")
+	}
 	_, err := g.groupStateMgt.SetState(nil, nil, nil, nil, &id, nil)
 	return err
 }
 
 // GetTimeBias This property provides the information needed to convert the time stamp on the data back to the local time of the device
 func (g *OPCGroup) GetTimeBias() (int32, error) {
+	if g == nil || g.groupStateMgt == nil {
+		return 0, errors.New("uninitialized group")
+	}
 	_, _, _, timeBias, _, _, _, _, err := g.groupStateMgt.GetState()
 	return timeBias, err
 }
 
 // SetTimeBias This property provides the information needed to convert the time stamp on the data back to the local time of the device
 func (g *OPCGroup) SetTimeBias(timeBias int32) error {
+	if g == nil || g.groupStateMgt == nil {
+		return errors.New("uninitialized group")
+	}
 	_, err := g.groupStateMgt.SetState(nil, nil, &timeBias, nil, nil, nil)
 	return err
 }
 
 // GetDeadband A deadband is expressed as percent of full scale (legal values 0 to 100).
 func (g *OPCGroup) GetDeadband() (float32, error) {
+	if g == nil || g.groupStateMgt == nil {
+		return 0, errors.New("uninitialized group")
+	}
 	_, _, _, _, deadband, _, _, _, err := g.groupStateMgt.GetState()
 	return deadband, err
 }
 
 // SetDeadband A deadband is expressed as percent of full scale (legal values 0 to 100).
 func (g *OPCGroup) SetDeadband(deadband float32) error {
+	if g == nil || g.groupStateMgt == nil {
+		return errors.New("uninitialized group")
+	}
 	_, err := g.groupStateMgt.SetState(nil, nil, nil, &deadband, nil, nil)
 	return err
 }
@@ -177,23 +224,35 @@ func (g *OPCGroup) SetDeadband(deadband float32) error {
 // that rate, so reading the property may result in a different rate (the server will use the closest rate it
 // does support).
 func (g *OPCGroup) GetUpdateRate() (uint32, error) {
+	if g == nil || g.groupStateMgt == nil {
+		return 0, errors.New("uninitialized group")
+	}
 	updateRate, _, _, _, _, _, _, _, err := g.groupStateMgt.GetState()
 	return updateRate, err
 }
 
 // SetUpdateRate set the update rate
 func (g *OPCGroup) SetUpdateRate(updateRate uint32) error {
+	if g == nil || g.groupStateMgt == nil {
+		return errors.New("uninitialized group")
+	}
 	_, err := g.groupStateMgt.SetState(&updateRate, nil, nil, nil, nil, nil)
 	return err
 }
 
 // OPCItems A collection of OPCItem objects
 func (g *OPCGroup) OPCItems() *OPCItems {
+	if g == nil {
+		return nil
+	}
 	return g.items
 }
 
 // SyncRead reads the value, quality and timestamp information for one or more items in a group.
 func (g *OPCGroup) SyncRead(source com.OPCDATASOURCE, serverHandles []uint32) ([]*com.ItemState, []error, error) {
+	if g == nil || g.syncIO == nil {
+		return nil, nil, errors.New("uninitialized group")
+	}
 	values, errList, err := g.syncIO.Read(source, serverHandles)
 	if err != nil {
 		return nil, nil, err
@@ -211,13 +270,18 @@ func (g *OPCGroup) SyncRead(source com.OPCDATASOURCE, serverHandles []uint32) ([
 
 // SyncWrite Writes values to one or more items in a group
 func (g *OPCGroup) SyncWrite(serverHandles []uint32, values []interface{}) ([]error, error) {
+	if g == nil || g.syncIO == nil {
+		return nil, errors.New("uninitialized group")
+	}
 	variants := make([]com.VARIANT, len(values))
 	variantWrappers := make([]*com.VariantWrapper, len(values))
 	defer func() {
 		for _, variant := range variantWrappers {
-			err := variant.Clear()
-			if err != nil {
-				fmt.Println(err)
+			if variant != nil {
+				err := variant.Clear()
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 		}
 	}()
@@ -244,6 +308,9 @@ func (g *OPCGroup) SyncWrite(serverHandles []uint32, values []interface{}) ([]er
 
 // Release Releases the resources used by the group
 func (g *OPCGroup) Release() {
+	if g == nil {
+		return
+	}
 	if g.event != nil {
 		g.point.Unadvise(g.cookie)
 		g.point.Release()
@@ -253,10 +320,18 @@ func (g *OPCGroup) Release() {
 	if g.cancel != nil {
 		g.cancel()
 	}
-	g.items.Release()
-	g.groupStateMgt.Release()
-	g.syncIO.Release()
-	g.asyncIO2.Release()
+	if g.items != nil {
+		g.items.Release()
+	}
+	if g.groupStateMgt != nil {
+		g.groupStateMgt.Release()
+	}
+	if g.syncIO != nil {
+		g.syncIO.Release()
+	}
+	if g.asyncIO2 != nil {
+		g.asyncIO2.Release()
+	}
 }
 
 type DataChangeCallBackData struct {
@@ -273,6 +348,9 @@ type DataChangeCallBackData struct {
 
 // RegisterDataChange Register to receive data change events
 func (g *OPCGroup) RegisterDataChange(ch chan *DataChangeCallBackData) error {
+	if g == nil {
+		return errors.New("uninitialized group")
+	}
 	err := g.advise()
 	if err != nil {
 		return err
@@ -283,6 +361,9 @@ func (g *OPCGroup) RegisterDataChange(ch chan *DataChangeCallBackData) error {
 
 // RegisterReadComplete Register to receive read complete events
 func (g *OPCGroup) RegisterReadComplete(ch chan *ReadCompleteCallBackData) error {
+	if g == nil {
+		return errors.New("uninitialized group")
+	}
 	err := g.advise()
 	if err != nil {
 		return err
@@ -293,6 +374,9 @@ func (g *OPCGroup) RegisterReadComplete(ch chan *ReadCompleteCallBackData) error
 
 // RegisterWriteComplete Register to receive write complete events
 func (g *OPCGroup) RegisterWriteComplete(ch chan *WriteCompleteCallBackData) error {
+	if g == nil {
+		return errors.New("uninitialized group")
+	}
 	err := g.advise()
 	if err != nil {
 		return err
@@ -303,6 +387,9 @@ func (g *OPCGroup) RegisterWriteComplete(ch chan *WriteCompleteCallBackData) err
 
 // RegisterCancelComplete Register to receive cancel complete events
 func (g *OPCGroup) RegisterCancelComplete(ch chan *CancelCompleteCallBackData) error {
+	if g == nil {
+		return errors.New("uninitialized group")
+	}
 	err := g.advise()
 	if err != nil {
 		return err
@@ -337,6 +424,9 @@ type CancelCompleteCallBackData struct {
 }
 
 func (g *OPCGroup) advise() (err error) {
+	if g == nil || g.groupStateMgt == nil {
+		return errors.New("uninitialized group")
+	}
 	g.callbackLock.Lock()
 	defer g.callbackLock.Unlock()
 	if g.event != nil {
@@ -395,6 +485,9 @@ func (g *OPCGroup) loop(ctx context.Context, dataChangeCB chan *CDataChangeCallB
 }
 
 func (g *OPCGroup) fireDataChange(cbData *CDataChangeCallBackData) {
+	if g == nil {
+		return
+	}
 	masterError := error(nil)
 	if (cbData.MasterErr) < 0 {
 		masterError = g.getError(cbData.MasterErr)
@@ -425,6 +518,9 @@ func (g *OPCGroup) fireDataChange(cbData *CDataChangeCallBackData) {
 }
 
 func (g *OPCGroup) fireReadComplete(cbData *CReadCompleteCallBackData) {
+	if g == nil {
+		return
+	}
 	masterError := error(nil)
 	if (cbData.MasterErr) < 0 {
 		masterError = g.getError(cbData.MasterErr)
@@ -455,6 +551,9 @@ func (g *OPCGroup) fireReadComplete(cbData *CReadCompleteCallBackData) {
 }
 
 func (g *OPCGroup) fireWriteComplete(cbData *CWriteCompleteCallBackData) {
+	if g == nil {
+		return
+	}
 	masterError := error(nil)
 	if (cbData.MasterErr) < 0 {
 		masterError = g.getError(cbData.MasterErr)
@@ -481,6 +580,9 @@ func (g *OPCGroup) fireWriteComplete(cbData *CWriteCompleteCallBackData) {
 }
 
 func (g *OPCGroup) fireCancelComplete(cbData *CCancelCompleteCallBackData) {
+	if g == nil {
+		return
+	}
 	data := &CancelCompleteCallBackData{
 		TransID:     cbData.TransID,
 		GroupHandle: cbData.GroupHandle,
@@ -495,6 +597,9 @@ func (g *OPCGroup) AsyncRead(
 	serverHandles []uint32,
 	clientTransactionID uint32,
 ) (cancelID uint32, errs []error, err error) {
+	if g == nil || g.asyncIO2 == nil {
+		return 0, nil, errors.New("uninitialized group")
+	}
 	var es []int32
 	cancelID, es, err = g.asyncIO2.Read(
 		serverHandles,
@@ -518,12 +623,15 @@ func (g *OPCGroup) AsyncWrite(
 	values []interface{},
 	clientTransactionID uint32,
 ) (cancelID uint32, errs []error, err error) {
+	if g == nil || g.asyncIO2 == nil {
+		return 0, nil, errors.New("uninitialized group")
+	}
 	variants := make([]com.VARIANT, len(values))
 	variantWrappers := make([]*com.VariantWrapper, len(values))
 
 	defer func() {
-		for _, variant := range variants {
-			variant.Clear()
+		for _, v := range variants {
+			v.Clear()
 		}
 	}()
 	for i, v := range values {
@@ -559,6 +667,9 @@ func (g *OPCGroup) AsyncRefresh(
 	source com.OPCDATASOURCE,
 	clientTransactionID uint32,
 ) (cancelID uint32, err error) {
+	if g == nil || g.asyncIO2 == nil {
+		return 0, errors.New("uninitialized group")
+	}
 	cancelID, err = g.asyncIO2.Refresh2(
 		source,
 		clientTransactionID,
@@ -569,10 +680,16 @@ func (g *OPCGroup) AsyncRefresh(
 // AsyncCancel Request that the server cancel an outstanding transaction. An AsyncCancelComplete event will
 // occur indicating whether or not the cancel succeeded.
 func (g *OPCGroup) AsyncCancel(cancelID uint32) error {
+	if g == nil || g.asyncIO2 == nil {
+		return errors.New("uninitialized group")
+	}
 	return g.asyncIO2.Cancel2(cancelID)
 }
 
 func (g *OPCGroup) getError(errorCode int32) error {
+	if g == nil || g.iCommon == nil {
+		return &OPCError{ErrorCode: errorCode, ErrorMessage: "uninitialized common interface"}
+	}
 	errStr, _ := g.iCommon.GetErrorString(uint32(errorCode))
 	return &OPCError{
 		ErrorCode:    errorCode,

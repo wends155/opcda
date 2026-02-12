@@ -86,11 +86,22 @@ func (sl *IOPCSyncIO) Read(source OPCDATASOURCE, serverHandles []uint32) ([]*Ite
 		errNo := *(*int32)(unsafe.Pointer(uintptr(pErrors) + uintptr(i)*4))
 		value := *(*TagOPCITEMSTATE)(unsafe.Pointer(uintptr(pValues) + uintptr(i)*unsafe.Sizeof(TagOPCITEMSTATE{})))
 		if errNo >= 0 {
-			returnValues[i] = &ItemState{
-				Value:        value.VDataValue.Value(),
-				Quality:      value.WQuality,
-				Timestamp:    time.Unix(0, value.FTimestamp.Nanoseconds()),
-				ClientHandle: int32(value.HClient),
+			v, err := value.VDataValue.Value()
+			if err != nil {
+				errNo = int32(0x80004005 - 0x100000000) // E_FAIL
+				returnValues[i] = &ItemState{
+					Value:        nil,
+					Quality:      value.WQuality,
+					Timestamp:    time.Unix(0, value.FTimestamp.Nanoseconds()),
+					ClientHandle: int32(value.HClient),
+				}
+			} else {
+				returnValues[i] = &ItemState{
+					Value:        v,
+					Quality:      value.WQuality,
+					Timestamp:    time.Unix(0, value.FTimestamp.Nanoseconds()),
+					ClientHandle: int32(value.HClient),
+				}
 			}
 		}
 		value.VDataValue.Clear()

@@ -133,7 +133,13 @@ func (v *IOPCItemProperties) GetItemProperties(szItemID string, propertyIDs []ui
 		variant := *(*VARIANT)(unsafe.Pointer(uintptr(pData) + uintptr(i)*unsafe.Sizeof(VARIANT{})))
 		errNo := *(*int32)(unsafe.Pointer(uintptr(pErrors) + uintptr(i)*4))
 		if errNo >= 0 {
-			ppvData[i] = variant.Value()
+			v, err := variant.Value()
+			if err != nil {
+				errNo = int32(0x80004005 - 0x100000000) // E_FAIL
+				ppvData[i] = nil
+			} else {
+				ppvData[i] = v
+			}
 		}
 		variant.Clear()
 		ppErrors[i] = int32(errNo)

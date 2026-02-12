@@ -1,4 +1,5 @@
 //go:build windows
+
 package opcda
 
 import (
@@ -108,7 +109,11 @@ func DataOnDataChange(this unsafe.Pointer, dwTransid uint32, hGroup uint32, hrMa
 	for i := 0; i < int(dwCount); i++ {
 		clientHandles[i] = *(*uint32)(unsafe.Pointer(uintptr(phClientItems) + uintptr(i)*unsafe.Sizeof(uint32(0))))
 		variant := *(*com.VARIANT)(unsafe.Pointer(uintptr(pvValues) + uintptr(i)*unsafe.Sizeof(com.VARIANT{})))
-		values[i] = variant.Value()
+		v, err := variant.Value()
+		if err != nil {
+			v = nil
+		}
+		values[i] = v
 		qualities[i] = *(*uint16)(unsafe.Pointer(uintptr(pwQualities) + uintptr(i)*unsafe.Sizeof(uint16(0))))
 		ft := *(*windows.Filetime)(unsafe.Pointer(uintptr(pftTimeStamps) + uintptr(i)*unsafe.Sizeof(windows.Filetime{})))
 		timestamps[i] = time.Unix(0, ft.Nanoseconds())
@@ -151,7 +156,11 @@ func DataOnReadComplete(this unsafe.Pointer, dwTransid uint32, hGroup uint32, hr
 	for i := 0; i < int(dwCount); i++ {
 		clientHandles[i] = *(*uint32)(unsafe.Pointer(uintptr(phClientItems) + uintptr(i)*unsafe.Sizeof(uint32(0))))
 		variant := *(*com.VARIANT)(unsafe.Pointer(uintptr(pvValues) + uintptr(i)*unsafe.Sizeof(com.VARIANT{})))
-		values[i] = variant.Value()
+		v, err := variant.Value()
+		if err != nil {
+			v = nil
+		}
+		values[i] = v
 		qualities[i] = *(*uint16)(unsafe.Pointer(uintptr(pwQualities) + uintptr(i)*unsafe.Sizeof(uint16(0))))
 		ft := *(*windows.Filetime)(unsafe.Pointer(uintptr(pftTimeStamps) + uintptr(i)*unsafe.Sizeof(windows.Filetime{})))
 		timestamps[i] = time.Unix(0, ft.Nanoseconds())

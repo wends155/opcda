@@ -137,9 +137,9 @@ Manages a set of OPC items and handles data exchange.
 ### OPCItem (`opcitem.go`)
 Represents an individual data point (tag).
 
-- **`Read(source)`**: Reads the current value, quality, and timestamp for the item.
-- **`Write(value)`**: Writes a new value to the tag.
-- **`GetQuality()`, `GetValue()`, `GetTimestamp()`**: Accessors for the last known state of the item.
+- **`Read(source)`**: Reads the current value, quality, and timestamp for the item. Returns an `error` if the read fails.
+- **`Write(value)`**: Writes a new value to the tag. Returns an `error` if the write fails.
+- **`GetQuality()`, `GetValue()`, `GetTimestamp()`**: Accessors for the last known state of the item. Now nil-safe (returns zero-values if the item is uninitialized).
 
 ### COM Utilities (`com/com.go`)
 Low-level primitives for Windows COM interop.

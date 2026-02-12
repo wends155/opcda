@@ -29,7 +29,8 @@ func ExampleNewVariant() {
 	}
 	defer v.Clear()
 
-	fmt.Printf("VT: %d, Value: %v\n", v.Variant.VT, v.Variant.Value())
+	val, _ := v.Variant.Value()
+	fmt.Printf("VT: %d, Value: %v\n", v.Variant.VT, val)
 	// Output: VT: 3, Value: 123
 }
 
