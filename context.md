@@ -40,6 +40,20 @@
 - **Registry Fix**: Resolved "Access is denied" when connecting to local servers by using local `registry.CLASSES_ROOT` instead of `OpenRemoteKey("localhost", ...)`.
 - **Benefit**: CI/CD can now verify core logic without requiring initialized Windows COM or specialized OPC simulators.
 
+### OPCBrowser Refactor & Diagramming Rule (2026-02-13)
+
+- **Change**: Refactored `opcbrowser.go` to use `browserProvider` pattern and `comBrowserProvider` struct, standardizing the `Release()` signature.
+- **Impact**: Aligned `opcbrowser` with the project's dependency injection pattern, improving mockability and interface uniformity.
+- **Rules**: Updated `GEMINI.md` to require architecture diagrams in audit/implementation reports.
+- **Rules**: Updated `GEMINI.md` to require architecture diagrams in audit/implementation reports.
+- **Verification**: `go test` passes for unit tests.
+
+### Log Directory Standardization (2026-02-13)
+
+- **Change**: Enforced all temporary logs to be written to `./logs/`.
+- **Tooling**: Updated `Makefile` to create `./logs/` and redirect test output. Added `logs/` to `.gitignore`.
+- **Purpose**: Clean up workspace and centralize artifact management.
+
 ### 🧩 Active Components & APIs
 * `opcda`: Core Go package.
     * `OPCServer`: Main struct for connecting to OPC servers.

@@ -5,11 +5,13 @@ all: test
 
 # Run unit tests (mocked, environment-agnostic)
 test:
-	go test -v ./...
+	@mkdir -p logs
+	go test -v ./... > logs/test.log 2>&1
 
 # Run integration tests (requires Windows + OPC Server)
 integration:
-	go test -v -tags integration ./...
+	@mkdir -p logs
+	go test -v -tags integration ./... > logs/integration.log 2>&1
 
 # Show help
 help:

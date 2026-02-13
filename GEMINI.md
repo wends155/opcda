@@ -7,7 +7,8 @@
 * **Responsibility:**
     * **Analyze** Go/COM interactions (`golang.org/x/sys/windows`).
     * **Investigate** OPC connectivity errors using `godoc` and `context7`.
-    * **Create** detailed, step-by-step implementation plans. Plans **MUST** include code snippets and concrete examples to provide clear context for the **Builder**.
+    * **Create** detailed, step-by-step implementation plans. Plans **MUST** include code snippets and concrete examples.
+    * **Visualize** architecture or component relationships using Mermaid diagrams or graphs in audit reports and implementation plans whenever possible.
     * **Define** the verification strategy.
 
 ### 2. The Builder (Gemini 3 Flash)
@@ -44,3 +45,4 @@
 * **OS:** Windows (Non-Admin)
 * **Shell:** PowerShell (Default)
 * **Toolchain:** Go 1.20+, `golang.org/x/sys/windows`.
+* **Logging & Artifacts:** All temporary logs (test, scripts, compile, debug, troubleshooting) MUST be placed in a `./logs/` folder. Do not pollute the root directory.

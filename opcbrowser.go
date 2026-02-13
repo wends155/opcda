@@ -9,29 +9,55 @@ import (
 	"github.com/wends155/opcda/com"
 )
 
-// browserAddressSpace defines the methods required for browsing OPC item IDs.
+// browserProvider defines the methods required for browsing OPC item IDs.
 // It abstracts the underlying COM implementation (com.IOPCBrowseServerAddressSpace)
 // to enable unit testing and mocking.
 //
 // Example usage in tests:
 //
-//	mock := &mockBrowserAddressSpace{}
-//	browser := &OPCBrowser{iBrowseServerAddressSpace: mock}
-type browserAddressSpace interface {
+//	mock := &mockBrowserProvider{}
+//	browser := &OPCBrowser{provider: mock}
+type browserProvider interface {
 	GetItemID(szItemDataID string) (string, error)
 	QueryOrganization() (com.OPCNAMESPACETYPE, error)
 	BrowseOPCItemIDs(dwBrowseFilterType com.OPCBROWSETYPE, szFilterCriteria string, vtDataTypeFilter uint16, dwAccessRightsFilter uint32) ([]string, error)
 	ChangeBrowsePosition(dwBrowseDirection com.OPCBROWSEDIRECTION, szString string) error
-	Release() uint32
+	Release()
+}
+
+type comBrowserProvider struct {
+	iBrowseServerAddressSpace *com.IOPCBrowseServerAddressSpace
+}
+
+func (p *comBrowserProvider) GetItemID(szItemDataID string) (string, error) {
+	return p.iBrowseServerAddressSpace.GetItemID(szItemDataID)
+}
+
+func (p *comBrowserProvider) QueryOrganization() (com.OPCNAMESPACETYPE, error) {
+	return p.iBrowseServerAddressSpace.QueryOrganization()
+}
+
+func (p *comBrowserProvider) BrowseOPCItemIDs(dwBrowseFilterType com.OPCBROWSETYPE, szFilterCriteria string, vtDataTypeFilter uint16, dwAccessRightsFilter uint32) ([]string, error) {
+	return p.iBrowseServerAddressSpace.BrowseOPCItemIDs(dwBrowseFilterType, szFilterCriteria, vtDataTypeFilter, dwAccessRightsFilter)
+}
+
+func (p *comBrowserProvider) ChangeBrowsePosition(dwBrowseDirection com.OPCBROWSEDIRECTION, szString string) error {
+	return p.iBrowseServerAddressSpace.ChangeBrowsePosition(dwBrowseDirection, szString)
+}
+
+func (p *comBrowserProvider) Release() {
+	if p.iBrowseServerAddressSpace != nil {
+		p.iBrowseServerAddressSpace.Release()
+	}
 }
 
 type OPCBrowser struct {
-	iBrowseServerAddressSpace browserAddressSpace
-	filter                    string
-	dataType                  uint16
-	accessRights              uint32
-	names                     []string
-	parent                    *OPCServer
+	provider     browserProvider
+	filter       string
+	dataType     uint16
+	accessRights uint32
+	names        []string
+	parent       *OPCServer
 }
 
 func NewOPCBrowser(parent *OPCServer) (*OPCBrowser, error) {
@@ -43,14 +69,14 @@ func NewOPCBrowser(parent *OPCServer) (*OPCBrowser, error) {
 	if err != nil {
 		return nil, NewOPCWrapperError("query interface IOPCBrowseServerAddressSpace", err)
 	}
-	return newOPCBrowserWithInterface(&com.IOPCBrowseServerAddressSpace{IUnknown: iBrowseServerAddressSpace}, parent), nil
+	return newOPCBrowserWithProvider(&comBrowserProvider{iBrowseServerAddressSpace: &com.IOPCBrowseServerAddressSpace{IUnknown: iBrowseServerAddressSpace}}, parent), nil
 }
 
-func newOPCBrowserWithInterface(i browserAddressSpace, parent *OPCServer) *OPCBrowser {
+func newOPCBrowserWithProvider(provider browserProvider, parent *OPCServer) *OPCBrowser {
 	return &OPCBrowser{
-		iBrowseServerAddressSpace: i,
-		parent:                    parent,
-		accessRights:              OPC_READABLE | OPC_WRITEABLE,
+		provider:     provider,
+		parent:       parent,
+		accessRights: OPC_READABLE | OPC_WRITEABLE,
 	}
 }
 
@@ -109,19 +135,19 @@ func (b *OPCBrowser) SetAccessRights(accessRights uint32) error {
 
 // GetCurrentPosition Returns the current position in the tree
 func (b *OPCBrowser) GetCurrentPosition() (string, error) {
-	if b == nil || b.iBrowseServerAddressSpace == nil {
+	if b == nil || b.provider == nil {
 		return "", errors.New("uninitialized browser")
 	}
-	id, err := b.iBrowseServerAddressSpace.GetItemID("")
+	id, err := b.provider.GetItemID("")
 	return id, err
 }
 
 // GetOrganization Returns either OPCHierarchical or OPCFlat.
 func (b *OPCBrowser) GetOrganization() (com.OPCNAMESPACETYPE, error) {
-	if b == nil || b.iBrowseServerAddressSpace == nil {
+	if b == nil || b.provider == nil {
 		return 0, errors.New("uninitialized browser")
 	}
-	return b.iBrowseServerAddressSpace.QueryOrganization()
+	return b.provider.QueryOrganization()
 }
 
 // GetCount Required property for collections
@@ -145,18 +171,18 @@ func (b *OPCBrowser) Item(index int) (string, error) {
 
 // ShowBranches Fills the collection with names of the branches at the current browse position.
 func (b *OPCBrowser) ShowBranches() error {
-	if b == nil || b.iBrowseServerAddressSpace == nil {
+	if b == nil || b.provider == nil {
 		return errors.New("uninitialized browser")
 	}
 	b.names = nil
 	var err error
-	b.names, err = b.iBrowseServerAddressSpace.BrowseOPCItemIDs(OPC_BRANCH, b.filter, b.dataType, b.accessRights)
+	b.names, err = b.provider.BrowseOPCItemIDs(OPC_BRANCH, b.filter, b.dataType, b.accessRights)
 	return err
 }
 
 // ShowLeafs Fills the collection with the names of the leafs at the current browse position
 func (b *OPCBrowser) ShowLeafs(flat bool) error {
-	if b == nil || b.iBrowseServerAddressSpace == nil {
+	if b == nil || b.provider == nil {
 		return errors.New("uninitialized browser")
 	}
 	b.names = nil
@@ -165,25 +191,25 @@ func (b *OPCBrowser) ShowLeafs(flat bool) error {
 	if flat {
 		browseType = OPC_FLAT
 	}
-	b.names, err = b.iBrowseServerAddressSpace.BrowseOPCItemIDs(browseType, b.filter, b.dataType, b.accessRights)
+	b.names, err = b.provider.BrowseOPCItemIDs(browseType, b.filter, b.dataType, b.accessRights)
 	return err
 }
 
 // MoveUp Move up one level in the tree.
 func (b *OPCBrowser) MoveUp() error {
-	if b == nil || b.iBrowseServerAddressSpace == nil {
+	if b == nil || b.provider == nil {
 		return errors.New("uninitialized browser")
 	}
-	return b.iBrowseServerAddressSpace.ChangeBrowsePosition(OPC_BROWSE_UP, "")
+	return b.provider.ChangeBrowsePosition(OPC_BROWSE_UP, "")
 }
 
 // MoveToRoot Move up to the first level in the tree.
 func (b *OPCBrowser) MoveToRoot() {
-	if b == nil || b.iBrowseServerAddressSpace == nil {
+	if b == nil || b.provider == nil {
 		return
 	}
 	for {
-		err := b.iBrowseServerAddressSpace.ChangeBrowsePosition(OPC_BROWSE_UP, "")
+		err := b.provider.ChangeBrowsePosition(OPC_BROWSE_UP, "")
 		if err != nil {
 			break
 		}
@@ -192,15 +218,15 @@ func (b *OPCBrowser) MoveToRoot() {
 
 // MoveDown Move down into this branch.
 func (b *OPCBrowser) MoveDown(name string) error {
-	if b == nil || b.iBrowseServerAddressSpace == nil {
+	if b == nil || b.provider == nil {
 		return errors.New("uninitialized browser")
 	}
-	return b.iBrowseServerAddressSpace.ChangeBrowsePosition(OPC_BROWSE_DOWN, name)
+	return b.provider.ChangeBrowsePosition(OPC_BROWSE_DOWN, name)
 }
 
 // MoveTo Move to an absolute position.
 func (b *OPCBrowser) MoveTo(branches []string) error {
-	if b == nil || b.iBrowseServerAddressSpace == nil {
+	if b == nil || b.provider == nil {
 		return errors.New("uninitialized browser")
 	}
 	b.MoveToRoot()
@@ -215,16 +241,16 @@ func (b *OPCBrowser) MoveTo(branches []string) error {
 
 // GetItemID Given a name, returns a valid ItemID that can be passed to OPCItems Add method.
 func (b *OPCBrowser) GetItemID(leaf string) (string, error) {
-	if b == nil || b.iBrowseServerAddressSpace == nil {
+	if b == nil || b.provider == nil {
 		return "", errors.New("uninitialized browser")
 	}
-	return b.iBrowseServerAddressSpace.GetItemID(leaf)
+	return b.provider.GetItemID(leaf)
 }
 
 // Release release the OPCBrowser
 func (b *OPCBrowser) Release() {
-	if b == nil || b.iBrowseServerAddressSpace == nil {
+	if b == nil || b.provider == nil {
 		return
 	}
-	b.iBrowseServerAddressSpace.Release()
+	b.provider.Release()
 }

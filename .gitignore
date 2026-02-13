@@ -12,3 +12,7 @@ coverage.txt
 
 # Vendor
 vendor/
+
+# Logs
+logs/
+*.log

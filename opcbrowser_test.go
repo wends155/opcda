@@ -11,16 +11,16 @@ import (
 	"github.com/wends155/opcda/com"
 )
 
-// mockBrowserAddressSpace is a mock implementation of the browserAddressSpace interface.
+// mockBrowserProvider is a mock implementation of the browserProvider interface.
 // It simulates a simple hierarchical address space for testing.
-type mockBrowserAddressSpace struct {
+type mockBrowserProvider struct {
 	currentPath string
 	branches    map[string][]string
 	leaves      map[string][]string
 }
 
-func newMockBrowserAddressSpace() *mockBrowserAddressSpace {
-	return &mockBrowserAddressSpace{
+func newMockBrowserProvider() *mockBrowserProvider {
+	return &mockBrowserProvider{
 		currentPath: "",
 		branches: map[string][]string{
 			"":        {"Folder1", "Folder2"},
@@ -34,7 +34,7 @@ func newMockBrowserAddressSpace() *mockBrowserAddressSpace {
 	}
 }
 
-func (m *mockBrowserAddressSpace) GetItemID(leaf string) (string, error) {
+func (m *mockBrowserProvider) GetItemID(leaf string) (string, error) {
 	if leaf == "" {
 		return m.currentPath, nil
 	}
@@ -44,11 +44,11 @@ func (m *mockBrowserAddressSpace) GetItemID(leaf string) (string, error) {
 	return fmt.Sprintf("%s.%s", m.currentPath, leaf), nil
 }
 
-func (m *mockBrowserAddressSpace) QueryOrganization() (com.OPCNAMESPACETYPE, error) {
+func (m *mockBrowserProvider) QueryOrganization() (com.OPCNAMESPACETYPE, error) {
 	return OPC_NS_HIERARCHIAL, nil
 }
 
-func (m *mockBrowserAddressSpace) BrowseOPCItemIDs(filterType com.OPCBROWSETYPE, filter string, dataType uint16, accessRights uint32) ([]string, error) {
+func (m *mockBrowserProvider) BrowseOPCItemIDs(filterType com.OPCBROWSETYPE, filter string, dataType uint16, accessRights uint32) ([]string, error) {
 	switch filterType {
 	case OPC_BRANCH:
 		return m.branches[m.currentPath], nil
@@ -59,7 +59,7 @@ func (m *mockBrowserAddressSpace) BrowseOPCItemIDs(filterType com.OPCBROWSETYPE,
 	}
 }
 
-func (m *mockBrowserAddressSpace) ChangeBrowsePosition(dir com.OPCBROWSEDIRECTION, name string) error {
+func (m *mockBrowserProvider) ChangeBrowsePosition(dir com.OPCBROWSEDIRECTION, name string) error {
 	switch dir {
 	case OPC_BROWSE_UP:
 		if m.currentPath == "SubFolder1" {
@@ -81,13 +81,13 @@ func (m *mockBrowserAddressSpace) ChangeBrowsePosition(dir com.OPCBROWSEDIRECTIO
 	return nil
 }
 
-func (m *mockBrowserAddressSpace) Release() uint32 {
-	return 0
+func (m *mockBrowserProvider) Release() {
+	// no-op
 }
 
 func TestOPCBrowser_MockNavigation(t *testing.T) {
-	mock := newMockBrowserAddressSpace()
-	browser := newOPCBrowserWithInterface(mock, nil)
+	mock := newMockBrowserProvider()
+	browser := newOPCBrowserWithProvider(mock, nil)
 
 	// Test Initial State
 	pos, _ := browser.GetCurrentPosition()
@@ -127,8 +127,8 @@ func TestOPCBrowser_MockNavigation(t *testing.T) {
 
 func ExampleOPCBrowser_ShowLeafs_mock() {
 	// Initialize browser with mock address space
-	mock := newMockBrowserAddressSpace()
-	browser := newOPCBrowserWithInterface(mock, nil)
+	mock := newMockBrowserProvider()
+	browser := newOPCBrowserWithProvider(mock, nil)
 
 	// Navigate to Folder1
 	browser.MoveDown("Folder1")
