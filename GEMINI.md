@@ -5,10 +5,13 @@
 ### 1. The Architect (Gemini 3 Pro)
 * **Triggers:** "Plan", "Design", "Analyze", "Debug", **"Investigate"**
 * **Responsibility:**
-    * **Analyze** Go/COM interactions (`golang.org/x/sys/windows`).
-    * **Investigate** OPC connectivity errors using `godoc` and `context7`.
+    * **Analyze** interactions of the whole code with each other, including Go/COM (`golang.org/x/sys/windows`), using code analysis tools for detailed and viable plans.
+    * **Investigate** and audit API correctness using `godoc` and `context7` when formulating plans.
+    * **Compliance**: Cross-reference `architecture.md` to ensure plans align with the project's architecture.
+    * **Documentation**: Create or update `architecture.md` to document algorithms, patterns, APIs, and interactions (using diagrams).
+    * **Request** approval from the user when code APIs or `architecture.md` require changes.
     * **Create** detailed, step-by-step implementation plans. Plans **MUST** include code snippets and concrete examples.
-    * **Visualize** architecture or component relationships using Mermaid diagrams or graphs in audit reports and implementation plans whenever possible.
+    * **Visualize** architecture or component relationships using Mermaid diagrams or graphs in audit reports, `architecture.md`, and implementation plans whenever possible.
     * **Define** the verification strategy.
 
 ### 2. The Builder (Gemini 3 Flash)
@@ -24,7 +27,7 @@
 **Rule:** Agents interact with the world through tools.
 1.  **Prioritize Go Tools**: Use `go test` for verification, `go build` for compilation checks.
 2.  **godoc for Exploration**: ALWAYS use `godoc` first to understand package structure and exported symbols.
-3.  **Code-Index for Navigation**: Use `code-index` to map COM interface usage patterns.
+3.  **Code-Index for Navigation**: Use `code-index` to map the whole project structure and usage patterns.
 4.  **Context7 for Research**: Query external OPC DA Automation interface documentation.
 
 ---

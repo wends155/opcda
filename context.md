@@ -54,6 +54,17 @@
 - **Tooling**: Updated `Makefile` to create `./logs/` and redirect test output. Added `logs/` to `.gitignore`.
 - **Purpose**: Clean up workspace and centralize artifact management.
 
+### Git Tooling Migration (2026-02-13)
+
+- **Change**: Replaced `git-mcp-server` with manual scripts (`scripts/gcom`, `scripts/gsync`) due to path traversal issues on Windows.
+- **Impact**: Improved reliability of version control operations.
+- **Workflow**: Documented new script usage in `GEMINI.md`.
+
+### Documentation Sync (2026-02-13)
+
+- **Change**: Updated `architecture.md` to document the **Provider Pattern** and **Test Strategy**.
+- **Impact**: Documentation now accurately reflects the decoupled architecture and dependency injection used for testing.
+
 ### 🧩 Active Components & APIs
 * `opcda`: Core Go package.
     * `OPCServer`: Main struct for connecting to OPC servers.

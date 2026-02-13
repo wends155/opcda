@@ -4,11 +4,12 @@ This document describes the architectural design of the `opcda` library, a Go-ba
 
 ## 🏗️ High-Level Architecture
 
-The library is structured into three main layers:
+The library is structured into four main layers, leveraging a **Provider Pattern** for dependency injection and testability:
 
 1.  **User API Layer**: High-level Go structs (`OPCServer`, `OPCGroup`, `OPCItem`) that provide a clean, idiomatic Go interface.
-2.  **COM Wrapper Layer**: Go wrappers for specific OPC COM interfaces (e.g., `IOPCServer`, `IOPCItemMgt`).
-3.  **Base COM Layer (`com/` package)**: Low-level utilities for COM object creation, memory management, and data type conversion (VARIANT, SafeArray).
+2.  **Provider Interface Layer**: Internal Go interfaces (`serverProvider`, `groupProvider`, `browserProvider`) that abstract the underlying COM operations. This allows for swapping between real COM implementations and mocks.
+3.  **COM Wrapper Layer**: Concrete implementations of providers (e.g., `comServerProvider`) that wrap specific OPC COM interfaces.
+4.  **Base COM Layer (`com/` package)**: Low-level utilities for COM object creation, memory management, and data type conversion (VARIANT, SafeArray).
 
 ### Component Interaction Diagram
 
@@ -27,6 +28,50 @@ graph TD
     WinSys -- "OLE/COM" --> COMRuntime["Windows COM/DCOM"]
     COMRuntime -- "DCOM" --> OPCServerExt["OPC DA Server (External Process)"]
 ```
+
+### 🧩 Provider Pattern Classes
+
+To enable unit testing without a running OPC server, the library uses dependency injection via internal interfaces.
+
+```mermaid
+classDiagram
+    class OPCServer {
+        +Connect()
+        -provider serverProvider
+    }
+    class serverProvider {
+        <<interface>>
+        +Connect()
+        +CreateBrowser()
+    }
+    class comServerProvider {
+        +Connect()
+    }
+    class mockServerProvider {
+        +Connect()
+    }
+    
+    OPCServer --> serverProvider
+    serverProvider <|.. comServerProvider : Real Implementation
+    serverProvider <|.. mockServerProvider : Test Implementation
+```
+
+## 🧪 Test Strategy
+
+The architecture supports two distinct testing strategies:
+
+### 1. Unit Tests (Isolated)
+*   **Command**: `go test ./...`
+*   **Mechanism**: Uses `mock*Provider` implementations.
+*   **Scope**: Verifies high-level logic, error handling, and state management without touching the OS COM runtime.
+*   **Environment**: Runs on any OS (CI/CD friendly), though `golang.org/x/sys/windows` dependency mandates Windows build tags or environment.
+
+### 2. Integration Tests (Live)
+*   **Command**: `make integration`
+*   **Tag**: `//go:build integration`
+*   **Mechanism**: Uses `com*Provider` implementations to talk to a real local OPC server (e.g., Graybox, Matrikon).
+*   **Scope**: Verifies actual COM interoperability, marshalling, and timing.
+*   **Environment**: Strictly requires Windows and a running OPC DA Server.
 
 ## 📂 Source Map & File Descriptions
 
