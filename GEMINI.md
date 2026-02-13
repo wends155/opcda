@@ -64,7 +64,9 @@
 * **context7 (MCP)**: Documentation queries for OPC DA/Automation specs.
 * **Go Toolchain**: `go test`, `go fmt`, `go vet`.
 * **Makefile**: Root-level `Makefile` for streamlined testing (`make test`, `make integration`).
-* **godoc (MCP)**: Preferred tool for internal API and architectural exploration. Use `mcp_godoc_get_doc` for concise package/symbol summaries.
+* **godoc (MCP)**: Preferred tool for internal API and architectural exploration.
+    *   **Rule**: Use `mcp_godoc_get_doc` with `path="."` and `working_dir="<project_root>"` for local packages.
+    *   **Restriction**: Avoid absolute paths for local packages to prevent module fetch failures.
 * **Scripts**:
     * `.\scripts\gcom "message"`: Combine `git add .` and `git commit -m`.
     * `.\scripts\gsync`: Combine `git pull --rebase` and `git push`.
