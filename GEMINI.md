@@ -80,6 +80,10 @@
     *   Explain *why* it exists (if non-obvious).
     *   Provide examples for complex logic.
 4.  **Verification**: Auditors MUST use `mcp_godoc_get_doc` (not `grep`) to verify coverage and rendering.
+5.  **Grammar & Style**:
+    *   **Full Sentences**: Comments must be full sentences ending with punctuation.
+    *   **Pattern**: Use the "SymbolName verb..." pattern (e.g., `Connect establishes...`, NOT `Connect connect to...`).
+    *   **No "Returns"**: Avoid starting with "Returns..."; use "GetX returns..." or simply "GetX...".
 
 ## 🛡️ Data Safety Protocol
 **Rule:** Prevention of accidental data loss is paramount.

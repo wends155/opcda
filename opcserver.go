@@ -14,11 +14,12 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// OPCServer represents a connection to an OPC DA server.
 type OPCServer struct {
 	provider   serverProvider
 	groups     *OPCGroups
-	Name       string
-	Node       string
+	Name       string // Name is the ProgID of the server.
+	Node       string // Node is the network node name where the server resides.
 	clientName string
 	location   com.CLSCTX
 
@@ -28,7 +29,8 @@ type OPCServer struct {
 	cookie    uint32
 }
 
-// Connect connect to OPC server
+// Connect establishes a connection to the OPC server.
+// It returns an OPCServer instance and an error if connection fails.
 func Connect(progID, node string) (opcServer *OPCServer, err error) {
 	location := com.CLSCTX_LOCAL_SERVER
 	if !com.IsLocal(node) {
@@ -84,6 +86,7 @@ func Connect(progID, node string) (opcServer *OPCServer, err error) {
 	return opcServer, nil
 }
 
+// newOPCServerWithProvider creates a new OPCServer with a specific provider (used for testing).
 func newOPCServerWithProvider(provider serverProvider, name string, node string) *OPCServer {
 	s := &OPCServer{
 		provider: provider,
@@ -94,6 +97,7 @@ func newOPCServerWithProvider(provider serverProvider, name string, node string)
 	return s
 }
 
+// getClsID retrieves the CLSID from ProgID, trying multiple methods (ServerList V2, V1, Registry).
 func getClsID(progID, node string, location com.CLSCTX) (clsid *windows.GUID, err error) {
 	var errorList []error
 	// try get clsid from server list
@@ -117,6 +121,7 @@ func getClsID(progID, node string, location com.CLSCTX) (clsid *windows.GUID, er
 	return nil, errors.Join(errorList...)
 }
 
+// getClsIDFromServerListV2 attempts to get CLSID using IOPCServerList2.
 func getClsIDFromServerListV2(progID, node string, location com.CLSCTX) (*windows.GUID, error) {
 	iCatInfo, err := com.MakeCOMObjectEx(node, location, &com.CLSID_OpcServerList, &com.IID_IOPCServerList2)
 	if err != nil {
@@ -131,6 +136,7 @@ func getClsIDFromServerListV2(progID, node string, location com.CLSCTX) (*window
 	return clsid, nil
 }
 
+// getClsIDFromServerListV1 attempts to get CLSID using IOPCServerList.
 func getClsIDFromServerListV1(progID, node string, location com.CLSCTX) (*windows.GUID, error) {
 	iCatInfo, err := com.MakeCOMObjectEx(node, location, &com.CLSID_OpcServerList, &com.IID_IOPCServerList)
 	if err != nil {
@@ -145,6 +151,7 @@ func getClsIDFromServerListV1(progID, node string, location com.CLSCTX) (*window
 	return clsid, nil
 }
 
+// getClsIDFromReg retrieves CLSID directly from Windows Registry.
 func getClsIDFromReg(progID, node string) (*windows.GUID, error) {
 	var clsid *windows.GUID
 	var err error
@@ -163,6 +170,7 @@ func getClsIDFromReg(progID, node string) (*windows.GUID, error) {
 	return clsid, err
 }
 
+// getClsidFromProgIDKey helper to extract CLSID string and GUID from a registry key.
 func getClsidFromProgIDKey(hProgIDKey registry.Key) (string, *windows.GUID, error) {
 	hClsidKey, err := registry.OpenKey(hProgIDKey, "CLSID", registry.READ)
 	if err != nil {
@@ -177,14 +185,15 @@ func getClsidFromProgIDKey(hProgIDKey registry.Key) (string, *windows.GUID, erro
 	return clsidStr, &clsid, err
 }
 
+// ServerInfo contains information about an OPC DA server.
 type ServerInfo struct {
-	ProgID       string
-	ClsStr       string
-	VerIndProgID string
-	ClsID        *windows.GUID
+	ProgID       string        // ProgID is the Program ID of the server.
+	ClsStr       string        // ClsStr is the CLSID string representation.
+	VerIndProgID string        // VerIndProgID is the Version Independent ProgID.
+	ClsID        *windows.GUID // ClsID is the unique Class ID of the server.
 }
 
-// GetOPCServers get OPC servers from node
+// GetOPCServers enumerates available OPC servers on a node.
 func GetOPCServers(node string) ([]*ServerInfo, error) {
 	var errorList []error
 	result, err := getServersFromOpcServerListV2(node)
@@ -207,6 +216,7 @@ func GetOPCServers(node string) ([]*ServerInfo, error) {
 	return nil, errors.Join(errorList...)
 }
 
+// getServersFromOpcServerListV2 enumerates servers using IOPCServerList2.
 func getServersFromOpcServerListV2(node string) ([]*ServerInfo, error) {
 	location := com.CLSCTX_LOCAL_SERVER
 	if !com.IsLocal(node) {
@@ -241,6 +251,7 @@ func getServersFromOpcServerListV2(node string) ([]*ServerInfo, error) {
 	return result, nil
 }
 
+// getServersFromOpcServerListV1 enumerates servers using IOPCServerList.
 func getServersFromOpcServerListV1(node string) ([]*ServerInfo, error) {
 	location := com.CLSCTX_LOCAL_SERVER
 	if !com.IsLocal(node) {
@@ -275,6 +286,7 @@ func getServersFromOpcServerListV1(node string) ([]*ServerInfo, error) {
 	return result, nil
 }
 
+// getServersFromReg enumerates servers by scanning the registry (fallback method).
 func getServersFromReg(node string) ([]*ServerInfo, error) {
 	var result []*ServerInfo
 	var hKey registry.Key
@@ -298,6 +310,7 @@ func getServersFromReg(node string) ([]*ServerInfo, error) {
 	return result, nil
 }
 
+// getServersFromKey helper to extract server info from a registry key.
 func getServersFromKey(hKey registry.Key, progID string) *ServerInfo {
 	hProgIDKey, err := registry.OpenKey(hKey, progID, registry.READ)
 	if err != nil {
@@ -321,6 +334,7 @@ func getServersFromKey(hKey registry.Key, progID string) *ServerInfo {
 	}
 }
 
+// getServer helper to extract details from IOPCServerList2.
 func getServer(sl *com.IOPCServerList2, classID *windows.GUID) (*ServerInfo, error) {
 	progID, userType, VerIndProgID, err := sl.GetClassDetails(classID)
 	if err != nil {
@@ -340,6 +354,7 @@ func getServer(sl *com.IOPCServerList2, classID *windows.GUID) (*ServerInfo, err
 	}, nil
 }
 
+// getServerV1 helper to extract details from IOPCServerList.
 func getServerV1(sl *com.IOPCServerList, classID *windows.GUID) (*ServerInfo, error) {
 	progID, userType, err := sl.GetClassDetails(classID)
 	if err != nil {
@@ -358,7 +373,7 @@ func getServerV1(sl *com.IOPCServerList, classID *windows.GUID) (*ServerInfo, er
 	}, nil
 }
 
-// GetLocaleID get locale ID
+// GetLocaleID returns the current locale ID.
 func (s *OPCServer) GetLocaleID() (uint32, error) {
 	if s == nil || s.provider == nil {
 		return 0, errors.New("uninitialized server connection")
@@ -367,7 +382,7 @@ func (s *OPCServer) GetLocaleID() (uint32, error) {
 	return localeID, err
 }
 
-// GetStartTime Returns the time the server started running
+// GetStartTime returns the time the server started running.
 func (s *OPCServer) GetStartTime() (time.Time, error) {
 	if s == nil || s.provider == nil {
 		return time.Time{}, errors.New("uninitialized server connection")
@@ -379,7 +394,7 @@ func (s *OPCServer) GetStartTime() (time.Time, error) {
 	return status.StartTime, nil
 }
 
-// GetCurrentTime Returns the current time from the server
+// GetCurrentTime returns the current time from the server.
 func (s *OPCServer) GetCurrentTime() (time.Time, error) {
 	if s == nil || s.provider == nil {
 		return time.Time{}, errors.New("uninitialized server connection")
@@ -391,7 +406,7 @@ func (s *OPCServer) GetCurrentTime() (time.Time, error) {
 	return status.CurrentTime, nil
 }
 
-// GetLastUpdateTime Returns the last update time from the server
+// GetLastUpdateTime returns the last update time from the server.
 func (s *OPCServer) GetLastUpdateTime() (time.Time, error) {
 	if s == nil || s.provider == nil {
 		return time.Time{}, errors.New("uninitialized server connection")
@@ -403,7 +418,7 @@ func (s *OPCServer) GetLastUpdateTime() (time.Time, error) {
 	return status.LastUpdateTime, nil
 }
 
-// GetMajorVersion Returns the major part of the server version number
+// GetMajorVersion returns the major part of the server version number.
 func (s *OPCServer) GetMajorVersion() (uint16, error) {
 	if s == nil || s.provider == nil {
 		return 0, errors.New("uninitialized server connection")
@@ -415,7 +430,7 @@ func (s *OPCServer) GetMajorVersion() (uint16, error) {
 	return status.MajorVersion, nil
 }
 
-// GetMinorVersion Returns the minor part of the server version number
+// GetMinorVersion returns the minor part of the server version number.
 func (s *OPCServer) GetMinorVersion() (uint16, error) {
 	if s == nil || s.provider == nil {
 		return 0, errors.New("uninitialized server connection")
@@ -427,7 +442,7 @@ func (s *OPCServer) GetMinorVersion() (uint16, error) {
 	return status.MinorVersion, nil
 }
 
-// GetBuildNumber Returns the build number of the server
+// GetBuildNumber returns the build number of the server.
 func (s *OPCServer) GetBuildNumber() (uint16, error) {
 	if s == nil || s.provider == nil {
 		return 0, errors.New("uninitialized server connection")
@@ -439,7 +454,7 @@ func (s *OPCServer) GetBuildNumber() (uint16, error) {
 	return status.BuildNumber, nil
 }
 
-// GetVendorInfo Returns the vendor information string for the server
+// GetVendorInfo returns the vendor information string for the server.
 func (s *OPCServer) GetVendorInfo() (string, error) {
 	if s == nil || s.provider == nil {
 		return "", errors.New("uninitialized server connection")
@@ -451,7 +466,7 @@ func (s *OPCServer) GetVendorInfo() (string, error) {
 	return status.VendorInfo, nil
 }
 
-// GetServerState Returns the server’s state
+// GetServerState returns the server's state.
 func (s *OPCServer) GetServerState() (com.OPCServerState, error) {
 	if s == nil || s.provider == nil {
 		return 0, errors.New("uninitialized server connection")
@@ -463,7 +478,7 @@ func (s *OPCServer) GetServerState() (com.OPCServerState, error) {
 	return status.ServerState, nil
 }
 
-// SetLocaleID set locale ID
+// SetLocaleID sets the locale ID.
 func (s *OPCServer) SetLocaleID(localeID uint32) error {
 	if s == nil || s.provider == nil {
 		return errors.New("uninitialized server connection")
@@ -471,7 +486,7 @@ func (s *OPCServer) SetLocaleID(localeID uint32) error {
 	return s.provider.SetLocaleID(localeID)
 }
 
-// GetBandwidth Returns the bandwidth of the server
+// GetBandwidth returns the bandwidth of the server.
 func (s *OPCServer) GetBandwidth() (uint32, error) {
 	if s == nil || s.provider == nil {
 		return 0, errors.New("uninitialized server connection")
@@ -483,7 +498,7 @@ func (s *OPCServer) GetBandwidth() (uint32, error) {
 	return status.BandWidth, nil
 }
 
-// GetOPCGroups get a collection of OPCGroup objects
+// GetOPCGroups returns the collection of OPCGroup objects.
 func (s *OPCServer) GetOPCGroups() *OPCGroups {
 	if s == nil {
 		return nil
@@ -491,7 +506,7 @@ func (s *OPCServer) GetOPCGroups() *OPCGroups {
 	return s.groups
 }
 
-// GetServerName Returns the server name of the server that the client connected to via Connect().
+// GetServerName returns the server name of the server that the client connected to via Connect().
 func (s *OPCServer) GetServerName() string {
 	if s == nil {
 		return ""
@@ -499,7 +514,7 @@ func (s *OPCServer) GetServerName() string {
 	return s.Name
 }
 
-// GetServerNode Returns the node name of the server that the client connected to via Connect().
+// GetServerNode returns the node name of the server that the client connected to via Connect().
 func (s *OPCServer) GetServerNode() string {
 	if s == nil {
 		return ""
@@ -507,7 +522,7 @@ func (s *OPCServer) GetServerNode() string {
 	return s.Node
 }
 
-// GetClientName Returns the client name of the client
+// GetClientName returns the client name of the client.
 func (s *OPCServer) GetClientName() string {
 	if s == nil {
 		return ""
@@ -515,7 +530,7 @@ func (s *OPCServer) GetClientName() string {
 	return s.clientName
 }
 
-// SetClientName Sets the client name of the client
+// SetClientName sets the client name of the client.
 func (s *OPCServer) SetClientName(clientName string) error {
 	if s == nil || s.provider == nil {
 		return errors.New("uninitialized server connection")
@@ -528,6 +543,7 @@ func (s *OPCServer) SetClientName(clientName string) error {
 	return nil
 }
 
+// PropertyDescription describes an OPC item property.
 type PropertyDescription struct {
 	PropertyID   int32
 	Description  string
@@ -535,7 +551,7 @@ type PropertyDescription struct {
 	AccessRights int16
 }
 
-// CreateBrowser Creates an OPCBrowser object
+// CreateBrowser creates an OPCBrowser object.
 func (s *OPCServer) CreateBrowser() (*OPCBrowser, error) {
 	if s == nil || s.provider == nil {
 		return nil, errors.New("uninitialized server connection")
@@ -543,7 +559,7 @@ func (s *OPCServer) CreateBrowser() (*OPCBrowser, error) {
 	return NewOPCBrowser(s)
 }
 
-// GetErrorString Converts an error number to a readable string
+// GetErrorString converts an error number to a readable string.
 func (s *OPCServer) GetErrorString(errorCode int32) (string, error) {
 	if s == nil || s.provider == nil {
 		return "", errors.New("uninitialized server connection")
@@ -551,7 +567,7 @@ func (s *OPCServer) GetErrorString(errorCode int32) (string, error) {
 	return s.provider.GetErrorString(uint32(errorCode))
 }
 
-// QueryAvailableLocaleIDs Return the available LocaleIDs for this server/client session
+// QueryAvailableLocaleIDs returns the available LocaleIDs for this server/client session.
 func (s *OPCServer) QueryAvailableLocaleIDs() ([]uint32, error) {
 	if s == nil || s.provider == nil {
 		return nil, errors.New("uninitialized server connection")
@@ -559,7 +575,7 @@ func (s *OPCServer) QueryAvailableLocaleIDs() ([]uint32, error) {
 	return s.provider.QueryAvailableLocaleIDs()
 }
 
-// QueryAvailableProperties Return a list of ID codes and Descriptions for the available properties for this ItemID
+// QueryAvailableProperties returns a list of ID codes and Descriptions for the available properties for this ItemID.
 func (s *OPCServer) QueryAvailableProperties(itemID string) (pPropertyIDs []uint32, ppDescriptions []string, ppvtDataTypes []uint16, err error) {
 	if s == nil || s.provider == nil {
 		return nil, nil, nil, errors.New("uninitialized server connection")
@@ -567,7 +583,7 @@ func (s *OPCServer) QueryAvailableProperties(itemID string) (pPropertyIDs []uint
 	return s.provider.QueryAvailableProperties(itemID)
 }
 
-// GetItemProperties Return a list of the current data values for the passed ID codes.
+// GetItemProperties returns a list of the current data values for the passed ID codes.
 func (s *OPCServer) GetItemProperties(itemID string, propertyIDs []uint32) (data []interface{}, itemErrors []error, err error) {
 	if s == nil || s.provider == nil {
 		return nil, nil, errors.New("uninitialized server connection")
@@ -581,7 +597,7 @@ func (s *OPCServer) GetItemProperties(itemID string, propertyIDs []uint32) (data
 	return data, itemErrors, nil
 }
 
-// LookupItemIDs Return a list of ItemIDs (if available) for each of the passed ID codes.
+// LookupItemIDs returns a list of ItemIDs (if available) for each of the passed ID codes.
 // have not tested because simulator return error
 func (s *OPCServer) LookupItemIDs(itemID string, propertyIDs []uint32) ([]string, []error, error) {
 	if s == nil || s.provider == nil {
@@ -595,6 +611,7 @@ func (s *OPCServer) LookupItemIDs(itemID string, propertyIDs []uint32) ([]string
 	return ItemIDs, itemErrors, nil
 }
 
+// errors converts raw error codes to OPCError structs.
 func (s *OPCServer) errors(errs []int32) []error {
 	errors := make([]error, len(errs))
 	for i, e := range errs {
@@ -609,7 +626,7 @@ func (s *OPCServer) errors(errs []int32) []error {
 	return errors
 }
 
-// RegisterServerShutDown register server shut down event
+// RegisterServerShutDown registers server shut down event.
 func (s *OPCServer) RegisterServerShutDown(ch chan string) error {
 	if s == nil || s.provider == nil {
 		return errors.New("uninitialized server connection")
@@ -653,7 +670,7 @@ func (s *OPCServer) RegisterServerShutDown(ch chan string) error {
 	return nil
 }
 
-// Disconnect from OPC server
+// Disconnect disconnects from the OPC server.
 func (s *OPCServer) Disconnect() error {
 	if s == nil {
 		return nil

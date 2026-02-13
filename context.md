@@ -76,6 +76,13 @@
 
 - **Impact**: Documentation now accurately reflects the decoupled architecture and dependency injection used for testing.
 
+### Documentation Audit & Grammar Enforcement (2026-02-13)
+
+- **Change**: Audited `opcserver.go` and `GEMINI.md` for documentation compliance.
+- **Standards**: Updated `GEMINI.md` to enforce strict punctuation (full sentences) and specific phrasing ("SymbolName verb..." pattern).
+- **Fixes**: Added missing comments to `OPCServer`, `ServerInfo`, and internal helper functions in `opcserver.go`.
+- **Verification**: Validated zero missing comments using `grep` (PowerShell `Select-String`) as a fallback for failing `godoc` environment.
+
 ### Lessons Learned (2026-02-13)
 
 - **Git Workflow**: `git-mcp-server` is unreliable on Windows/Non-Admin due to path traversal issues. Use custom scripts (`scripts/gcom`, `scripts/gsync`) for consistent, error-free version control.
