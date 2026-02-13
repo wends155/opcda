@@ -62,8 +62,15 @@
 
 ### Documentation Sync (2026-02-13)
 
-- **Change**: Updated `architecture.md` to document the **Provider Pattern** and **Test Strategy**.
 - **Impact**: Documentation now accurately reflects the decoupled architecture and dependency injection used for testing.
+
+### Lessons Learned (2026-02-13)
+
+- **Git Workflow**: `git-mcp-server` is unreliable on Windows/Non-Admin due to path traversal issues. Use custom scripts (`scripts/gcom`, `scripts/gsync`) for consistent, error-free version control.
+- **Automation Safety**: Always wait for user instruction before pushing commits (Phase 3). This avoids premature synchronization of unverified changes.
+- **Log Management**: Centralize all temporary outputs in `./logs/`. Use `make clean` to maintain a tidy workspace.
+- **Documentation**: A comprehensive API Reference in `architecture.md` is critical for developer onboarding and AI context limits.
+- **Artifacts**: Maintain `task.md`, `implementation_plan.md`, and `walkthrough.md` as living documents to track progress and decisions.
 
 ### 🧩 Active Components & APIs
 * `opcda`: Core Go package.
