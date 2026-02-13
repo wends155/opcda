@@ -209,6 +209,18 @@ Enumerates available OPC DA servers on the target node. `ServerInfo` contains `P
 
 #### `type OPCServer struct`
 Represents a connection to an OPC Server.
+*   **Struct Members**:
+    *   `Name` (`string`): ProgID of the server.
+    *   `Node` (`string`): Node name (machine name).
+    *   `clientName` (`string`): Name of the client application.
+    *   `location` (`com.CLSCTX`): Context in which the server is running (Local/Remote).
+    *   `groups` (`*OPCGroups`): Collection of OPC groups.
+    *   `provider` (`serverProvider`): Interface for server operations.
+    *   `container` (`*com.IConnectionPointContainer`): COM connection point container.
+    *   `point` (`*com.IConnectionPoint`): COM connection point.
+    *   `event` (`*ShutdownEventReceiver`): Receiver for shutdown events.
+    *   `cookie` (`uint32`): Connection cookie.
+
 *   **`Disconnect() error`**: Closes connection and releases resources.
 *   **`GetOPCGroups() *OPCGroups`**: Returns the collection of groups.
 *   **`CreateBrowser() (*OPCBrowser, error)`**: Creates an address space browser.
@@ -217,6 +229,17 @@ Represents a connection to an OPC Server.
 
 #### `type OPCGroups struct`
 Collection of `OPCGroup` objects.
+*   **Struct Members**:
+    *   `parent` (`*OPCServer`): Reference to the parent OPCServer.
+    *   `groups` (`[]*OPCGroup`): Slice of OPCGroup objects.
+    *   `provider` (`serverProvider`): Interface for server operations.
+    *   `groupID` (`uint32`): Generating ID for groups.
+    *   `defaultActive` (`bool`): Default active state for new groups.
+    *   `defaultGroupUpdateRate` (`uint32`): Default update rate for new groups.
+    *   `defaultDeadband` (`float32`): Default deadband for new groups.
+    *   `defaultLocaleID` (`uint32`): Default locale ID for new groups.
+    *   `defaultGroupTimeBias` (`int32`): Default time bias for new groups.
+
 *   **`Add(name string) (*OPCGroup, error)`**: Creates and adds a new group.
 *   **`Remove(serverHandle uint32) error`**: Removes a group by handle.
 *   **`RemoveByName(name string) error`**: Removes a group by name.
@@ -226,6 +249,20 @@ Collection of `OPCGroup` objects.
 
 #### `type OPCGroup struct`
 A container for OPC Items.
+*   **Struct Members**:
+    *   `parent` (`*OPCGroups`): Reference to the parent OPCGroups.
+    *   `provider` (`serverProvider`): Interface for server operations.
+    *   `groupProvider` (`groupProvider`): Interface for group operations.
+    *   `clientGroupHandle` (`uint32`): Client handle for the group.
+    *   `serverGroupHandle` (`uint32`): Server handle for the group.
+    *   `groupName` (`string`): Name of the group.
+    *   `revisedUpdateRate` (`uint32`): Actual update rate of the group.
+    *   `items` (`*OPCItems`): Collection of items in the group.
+    *   `container` (`*com.IConnectionPointContainer`): COM connection point container.
+    *   `point` (`*com.IConnectionPoint`): COM connection point for events.
+    *   `event` (`*DataEventReceiver`): Receiver for data events.
+    *   `cookie` (`uint32`): Connection cookie.
+
 *   **`Items() *OPCItems`**: Returns the `OPCItems` collection for this group.
 *   **`SyncRead(source com.OPCDATASOURCE, serverHandles []uint32) ([]*com.ItemState, []int32, error)`**: Synchronously reads values.
 *   **`SyncWrite(serverHandles []uint32, values []com.VARIANT) ([]int32, error)`**: Synchronously writes values.
@@ -235,6 +272,16 @@ A container for OPC Items.
 
 #### `type OPCItems struct`
 Collection of `OPCItem` objects.
+*   **Struct Members**:
+    *   `parent` (`*OPCGroup`): Reference to the parent OPCGroup.
+    *   `provider` (`serverProvider`): Interface for server operations.
+    *   `itemMgtProvider` (`itemMgtProvider`): Interface for item management operations.
+    *   `itemID` (`uint32`): Generating ID for items.
+    *   `defaultRequestedDataType` (`com.VT`): Default data type for new items.
+    *   `defaultAccessPath` (`string`): Default access path for new items.
+    *   `defaultActive` (`bool`): Default active state for new items.
+    *   `items` (`[]*OPCItem`): Slice of OPCItem objects.
+
 *   **`AddItem(tag string) (*OPCItem, error)`**: Adds a single item by tag name.
 *   **`AddItems(tags []string) ([]*OPCItem, []error, error)`**: Adds multiple items efficiently.
 *   **`Remove(serverHandles []uint32)`**: Removes items by handle.
@@ -243,6 +290,23 @@ Collection of `OPCItem` objects.
 
 #### `type OPCItem struct`
 Represents a single data point.
+*   **Struct Members**:
+    *   `parent` (`*OPCItems`): Reference to the parent OPCItems.
+    *   `provider` (`serverProvider`): Interface for server operations.
+    *   `groupProvider` (`groupProvider`): Interface for group operations.
+    *   `itemMgtProvider` (`itemMgtProvider`): Interface for item management.
+    *   `tag` (`string`): Item ID (tag name).
+    *   `clientHandle` (`uint32`): Client handle.
+    *   `serverHandle` (`uint32`): Server handle.
+    *   `accessPath` (`string`): Access path.
+    *   `accessRights` (`uint32`): Access rights.
+    *   `isActive` (`bool`): Active state.
+    *   `requestedDataType` (`com.VT`): Requested data type.
+    *   `nativeDataType` (`com.VT`): Native data type.
+    *   `value` (`interface{}`): Latest cached value.
+    *   `quality` (`uint16`): Latest cached quality.
+    *   `timestamp` (`time.Time`): Latest cached timestamp.
+
 *   **`Read(source com.OPCDATASOURCE) (interface{}, uint16, time.Time, error)`**: Reads current value/quality/timestamp.
 *   **`Write(value interface{}) error`**: Writes a value.
 *   **`GetValue() interface{}`**: Returns last cached value.
@@ -251,6 +315,14 @@ Represents a single data point.
 
 #### `type OPCBrowser struct`
 Helper for navigating server address space.
+*   **Struct Members**:
+    *   `parent` (`*OPCServer`): Reference to the parent OPCServer.
+    *   `provider` (`browserProvider`): Interface for browser operations.
+    *   `filter` (`string`): Current browse filter.
+    *   `dataType` (`uint16`): Requested data type for leaves.
+    *   `accessRights` (`uint32`): Requested access rights for leaves.
+    *   `names` (`[]string`): Cached list of names (branches or leaves).
+
 *   **`MoveTo(branches []string) error`**: Moves to a specific path.
 *   **`MoveUp() error`**: Moves one level up.
 *   **`MoveToRoot()`**: Moves to root.
