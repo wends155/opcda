@@ -193,7 +193,91 @@ Low-level primitives for Windows COM interop.
 - **`MakeCOMObjectEx()`**: Creates a COM object on a local or remote machine.
 - **`CoTaskMemFree()`**: Frees memory allocated by the COM task allocator.
 
-## 🔄 Data Flow: Synchronous Read
+## 📚 API Reference
+
+### Connection Management
+
+#### `func Connect(progID, node string) (*OPCServer, error)`
+Connects to an OPC DA server by its ProgID on the specified node (hostname or IP). Use `"localhost"` for local connections.
+
+#### `func GetOPCServers(node string) ([]*ServerInfo, error)`
+Enumerates available OPC DA servers on the target node. `ServerInfo` contains `ProgID` and `ClsID`.
+
+---
+
+### Structs & Methods
+
+#### `type OPCServer struct`
+Represents a connection to an OPC Server.
+*   **`Disconnect() error`**: Closes connection and releases resources.
+*   **`GetOPCGroups() *OPCGroups`**: Returns the collection of groups.
+*   **`CreateBrowser() (*OPCBrowser, error)`**: Creates an address space browser.
+*   **`GetStatus() (*com.ServerStatus, error)`**: Retrieves server status (state, time, version).
+*   **`GetErrorString(errorCode int32) (string, error)`**: Converts an error code to a readable string.
+
+#### `type OPCGroups struct`
+Collection of `OPCGroup` objects.
+*   **`Add(name string) (*OPCGroup, error)`**: Creates and adds a new group.
+*   **`Remove(serverHandle uint32) error`**: Removes a group by handle.
+*   **`RemoveByName(name string) error`**: Removes a group by name.
+*   **`GetOPCGroup(serverHandle uint32) (*OPCGroup, error)`**: Retrieves a group by handle.
+*   **`Item(index int32) (*OPCGroup, error)`**: Retrieves a group by index.
+*   **`GetCount() int`**: Returns the number of groups.
+
+#### `type OPCGroup struct`
+A container for OPC Items.
+*   **`Items() *OPCItems`**: Returns the `OPCItems` collection for this group.
+*   **`SyncRead(source com.OPCDATASOURCE, serverHandles []uint32) ([]*com.ItemState, []int32, error)`**: Synchronously reads values.
+*   **`SyncWrite(serverHandles []uint32, values []com.VARIANT) ([]int32, error)`**: Synchronously writes values.
+*   **`AsyncRead(serverHandles []uint32, transactionID uint32) (cancelID uint32, errs []int32, err error)`**: Starts async read.
+*   **`AsyncWrite(serverHandles []uint32, values []com.VARIANT, transactionID uint32) (cancelID uint32, errs []int32, err error)`**: Starts async write.
+*   **`RegisterDataChange(ch chan *DataChangeCallBackData) error`**: Subscribes to data change events.
+
+#### `type OPCItems struct`
+Collection of `OPCItem` objects.
+*   **`AddItem(tag string) (*OPCItem, error)`**: Adds a single item by tag name.
+*   **`AddItems(tags []string) ([]*OPCItem, []error, error)`**: Adds multiple items efficiently.
+*   **`Remove(serverHandles []uint32)`**: Removes items by handle.
+*   **`GetOPCItem(serverHandle uint32) (*OPCItem, error)`**: Retrieves an item by handle.
+*   **`Validate(tags []string, ...) ([]error, error)`**: Checks if items are valid without adding them.
+
+#### `type OPCItem struct`
+Represents a single data point.
+*   **`Read(source com.OPCDATASOURCE) (interface{}, uint16, time.Time, error)`**: Reads current value/quality/timestamp.
+*   **`Write(value interface{}) error`**: Writes a value.
+*   **`GetValue() interface{}`**: Returns last cached value.
+*   **`GetQuality() uint16`**: Returns last cached quality.
+*   **`GetTimestamp() time.Time`**: Returns last cached timestamp.
+
+#### `type OPCBrowser struct`
+Helper for navigating server address space.
+*   **`MoveTo(branches []string) error`**: Moves to a specific path.
+*   **`MoveUp() error`**: Moves one level up.
+*   **`MoveToRoot()`**: Moves to root.
+*   **`ShowBranches() error`**: Populates `names` with sub-branches.
+*   **`ShowLeafs(flat bool) error`**: Populates `names` with items (leaves).
+*   **`Item(index int) (string, error)`**: Gets name at index.
+
+---
+
+### Data Types
+
+#### `type OPCError struct`
+```go
+type OPCError struct {
+    ErrorCode    int32
+    ErrorMessage string
+}
+```
+
+#### `type OPCWrapperError struct`
+Wraps underlying errors with additional context.
+```go
+type OPCWrapperError struct {
+    Err  error
+    Info string
+}
+```
 
 1.  **User** calls `group.SyncRead()`.
 2.  **`OPCGroup`** prepares a list of server handles for the items.
