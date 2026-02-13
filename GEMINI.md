@@ -41,6 +41,7 @@
 ## 🚦 Automation Rules
 1.  **Phase 1 (Planning):** Default to **Gemini Pro**.
 2.  **Phase 2 (Hand-off):** Switch to **Gemini Flash** on **"Proceed"**.
+3.  **Phase 3 (Git)**: 🛑 **Wait for user instruction** before pushing commits.
 
 ---
 
