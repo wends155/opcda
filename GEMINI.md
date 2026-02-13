@@ -69,6 +69,18 @@
     * `.\scripts\gcom "message"`: Combine `git add .` and `git commit -m`.
     * `.\scripts\gsync`: Combine `git pull --rebase` and `git push`.
 
+## 📝 Documentation Standards
+**Rule:** Code must be self-documenting and strictly commented.
+1.  **Universal Coverage**: EVERY symbol (Exported AND Unexported) must have a `godoc` comment.
+    *   **Public**: `func Connect(...)` -> `// Connect establishes...`
+    *   **Private**: `type serverProvider interface` -> `// serverProvider defines the internal contract...`
+2.  **Format**: Comments MUST start with the symbol name.
+3.  **Context**: 
+    *   Explain *what* it does.
+    *   Explain *why* it exists (if non-obvious).
+    *   Provide examples for complex logic.
+4.  **Verification**: Auditors MUST use `mcp_godoc_get_doc` (not `grep`) to verify coverage and rendering.
+
 ## 🛡️ Data Safety Protocol
 **Rule:** Prevention of accidental data loss is paramount.
 1.  **Deletion Restriction**: NEVER programmatically delete source files (`.go`, `.md`, etc.) in the project root or source directories.

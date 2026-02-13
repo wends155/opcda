@@ -59,6 +59,13 @@
 - **Tooling**: Updated `Makefile` to create `./logs/` and redirect test output. Added `logs/` to `.gitignore`.
 - **Purpose**: Clean up workspace and centralize artifact management.
 
+### Documentation Standards (2026-02-13)
+
+- **Change**: Updated `GEMINI.md` to mandate `godoc` comments for **ALL** symbols (exported and unexported).
+- **Rule**: Comments must start with the symbol name and explain *what* and *why*.
+- **Verification**: Enforced usage of `mcp_godoc_get_doc` for verifying documentation coverage.
+- **Rationale**: Ensures code is self-documenting and accessible via standard Go tools and AI agents.
+
 ### Git Tooling Migration (2026-02-13)
 
 - **Change**: Replaced `git-mcp-server` with manual scripts (`scripts/gcom`, `scripts/gsync`) due to path traversal issues on Windows.
