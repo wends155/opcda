@@ -118,6 +118,13 @@ All APIs can be found in the [API documentation](https://pkg.go.dev/github.com/w
 
    This client uses COM interfaces, and memory release has been handled internally, with fatigue testing done for all supported types. All public methods are guarded with defensive nil-checks to return errors gracefully instead of panicking on uninitialized objects.
 
+## Development Tools
+
+To streamline common tasks, we provide helper scripts in the `scripts/` directory:
+
+*   **`.\scripts\gcom "message"`**: Combines `git add .` and `git commit -m`.
+*   **`.\scripts\gsync`**: Combines `git pull --rebase` and `git push`.
+
 ## Testing
 
 This project uses a combination of mock-based unit tests and server-dependent integration tests. A `Makefile` is provided for convenience.
