@@ -97,7 +97,10 @@ func newOPCServerWithProvider(provider serverProvider, name string, node string)
 	return s
 }
 
-// getClsID retrieves the CLSID from ProgID, trying multiple methods (ServerList V2, V1, Registry).
+// getClsID retrieves the CLSID from ProgID, trying multiple methods in order of preference:
+// 1. IOPCServerList2 (V2) - Modern interface with category filtering.
+// 2. IOPCServerList (V1) - Legacy interface.
+// 3. Windows Registry - Direct lookup.
 func getClsID(progID, node string, location com.CLSCTX) (clsid *windows.GUID, err error) {
 	var errorList []error
 	// try get clsid from server list
@@ -121,7 +124,7 @@ func getClsID(progID, node string, location com.CLSCTX) (clsid *windows.GUID, er
 	return nil, errors.Join(errorList...)
 }
 
-// getClsIDFromServerListV2 attempts to get CLSID using IOPCServerList2.
+// getClsIDFromServerListV2 attempts to get CLSID using the modern IOPCServerList2 interface (OPC DA 2.0+).
 func getClsIDFromServerListV2(progID, node string, location com.CLSCTX) (*windows.GUID, error) {
 	iCatInfo, err := com.MakeCOMObjectEx(node, location, &com.CLSID_OpcServerList, &com.IID_IOPCServerList2)
 	if err != nil {
@@ -136,7 +139,7 @@ func getClsIDFromServerListV2(progID, node string, location com.CLSCTX) (*window
 	return clsid, nil
 }
 
-// getClsIDFromServerListV1 attempts to get CLSID using IOPCServerList.
+// getClsIDFromServerListV1 attempts to get CLSID using the legacy IOPCServerList interface (OPC DA 1.0).
 func getClsIDFromServerListV1(progID, node string, location com.CLSCTX) (*windows.GUID, error) {
 	iCatInfo, err := com.MakeCOMObjectEx(node, location, &com.CLSID_OpcServerList, &com.IID_IOPCServerList)
 	if err != nil {
@@ -194,6 +197,7 @@ type ServerInfo struct {
 }
 
 // GetOPCServers enumerates available OPC servers on a node.
+// It employs a fallback strategy: IOPCServerList2 (V2) -> IOPCServerList (V1) -> Registry.
 func GetOPCServers(node string) ([]*ServerInfo, error) {
 	var errorList []error
 	result, err := getServersFromOpcServerListV2(node)
@@ -216,7 +220,7 @@ func GetOPCServers(node string) ([]*ServerInfo, error) {
 	return nil, errors.Join(errorList...)
 }
 
-// getServersFromOpcServerListV2 enumerates servers using IOPCServerList2.
+// getServersFromOpcServerListV2 enumerates servers using the modern IOPCServerList2 interface (OPC DA 2.0+).
 func getServersFromOpcServerListV2(node string) ([]*ServerInfo, error) {
 	location := com.CLSCTX_LOCAL_SERVER
 	if !com.IsLocal(node) {
@@ -251,7 +255,7 @@ func getServersFromOpcServerListV2(node string) ([]*ServerInfo, error) {
 	return result, nil
 }
 
-// getServersFromOpcServerListV1 enumerates servers using IOPCServerList.
+// getServersFromOpcServerListV1 enumerates servers using the legacy IOPCServerList interface (OPC DA 1.0).
 func getServersFromOpcServerListV1(node string) ([]*ServerInfo, error) {
 	location := com.CLSCTX_LOCAL_SERVER
 	if !com.IsLocal(node) {
@@ -286,7 +290,7 @@ func getServersFromOpcServerListV1(node string) ([]*ServerInfo, error) {
 	return result, nil
 }
 
-// getServersFromReg enumerates servers by scanning the registry (fallback method).
+// getServersFromReg enumerates servers by scanning the registry (last resort fallback method).
 func getServersFromReg(node string) ([]*ServerInfo, error) {
 	var result []*ServerInfo
 	var hKey registry.Key

@@ -30,6 +30,15 @@
 ## 📍 Current State (Recursive Summary)
 *This section is updated by the Architect after every successful implementation.*
 
+### V1/V2 Documentation Strategy (2026-02-13)
+
+- **Change**: Documented the "Server Discovery Strategy" in `architecture.md` and `opcserver.go` godoc comments.
+- **Details**:
+    - **V2 (`IOPCServerList2`)**: Preferred modern interface (OPC DA 2.0+).
+    - **V1 (`IOPCServerList`)**: Legacy fallback.
+    - **Registry**: Last resort.
+- **Rationale**: Clarified that the `V1`/`V2` suffixes in the codebase serve a functional backward-compatibility purpose, not just versioning.
+
 ### com/com.go & com/const.go
 
 - **Change**: Documented `COAUTHIDENTITY` struct and added authentication identity constants (`SEC_WINNT_AUTH_IDENTITY_ANSI`, `SEC_WINNT_AUTH_IDENTITY_UNICODE`).
@@ -109,6 +118,12 @@
 - **Godoc Usage (2026-02-13)**: Confirmed `mcp_godoc_get_doc` fails with "module verification" errors when using absolute paths for local packages. **Action**: Always use `path="."` combined with `working_dir="<project_root>"` for local queries.
 - **Process Breach (2026-02-13)**: Skipping the "Think" phase leads to unapproved changes and context drift. **Action**: Implemented "Planning Gate" protocol in `GEMINI.md` to lock the Agent into Planning Mode until user approval.
 - **File Editing (2026-02-13)**: `replace_file_content` failed repeatedly on `GEMINI.md` due to subtle spacing/newline mismatches. **Action**: When diffs fail twice, switch to `write_to_file` for a complete overwrite to ensure data integrity.
+
+### Naming Convention Audit (2026-02-13)
+
+- **Finding**: Codebase is highly compliant with idiomatic Go naming conventions.
+- **Exceptions**: Lower-level COM wrappers in `com/` use Hungarian notation and mixed-case filenames to match Windows API documentation. This is accepted as a necessary deviation for FFI maintainability.
+- **Outcome**: No changes required. Current standards validated.
 
 ### Thread Safety implementation (2026-02-13)
 

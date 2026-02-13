@@ -208,6 +208,15 @@ Connects to an OPC DA server by its ProgID on the specified node (hostname or IP
 #### `func GetOPCServers(node string) ([]*ServerInfo, error)`
 Enumerates available OPC DA servers on the target node. `ServerInfo` contains `ProgID` and `ClsID`.
 
+### Server Discovery Strategy
+To ensure maximum compatibility across different Windows environments and OPC Core Component versions, the library implements a **Fallback Strategy** for server enumeration and CLSID resolution:
+
+1.  **V2 (`IOPCServerList2`)**: The preferred modern interface (OPC DA 2.0+). It supports filtering by Category ID (`CATID_OPCDAServer20`), ensuring only relevant servers are returned.
+2.  **V1 (`IOPCServerList`)**: The legacy interface (OPC DA 1.0). Used as a fallback if V2 is unavailable. It enumerates all registered servers without advanced filtering.
+3.  **Registry**: Direct Windows Registry scanning. Used as a last resort if COM enumeration fails entirely.
+
+This logic is encapsulated in methods suffixed with `V2` (Modern) and `V1` (Legacy) in `opcserver.go`.
+
 ---
 
 ### Structs & Methods
