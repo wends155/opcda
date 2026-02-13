@@ -22,6 +22,7 @@ This is an OPC DA client written in Go language, allowing you to communicate wit
 - **Robustness**: Defensive nil-checks and error handling to prevent runtime panics.
 - **Dependency Injection**: Decoupled architecture for improved testability and mocking.
 - **Zero-Dependency Testing**: Pure unit tests using mocks, runnable in any environment.
+- **Documentation**: 100% Godoc compliance for all symbols.
 
 ## Prerequisites
 
@@ -144,6 +145,9 @@ make integration
 # OR
 go test -v -tags integration ./...
 ```
+
+### Log Management
+All temporary test logs and artifacts are automatically directed to the `./logs/` directory to keep the workspace clean. Use `make clean` to remove them.
 
 ### Documentation Examples
 Go `Example` functions are provided in the test files. They serve as runnable documentation and can be viewed via `godoc`.

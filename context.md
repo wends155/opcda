@@ -90,6 +90,13 @@
 - **Artifacts**: Created `audit_report.md` (audit phase), `implementation_plan.md` (planning phase), and `walkthrough.md` (verification phase).
 - **Verification**: Validated using `go build ./...` (syntax check) and `godoc` (rendered documentation check).
 
+### Project Documentation Update (2026-02-13)
+
+- **Change**: Updated `README.md` to reflect current architectural state (Provider Pattern, Mocking).
+- **Features**: Added milestones for "Robustness", "Dependency Injection", and "Zero-Dependency Testing".
+- **Testing**: Clarified distinction between Unit Tests (`make test`) and Integration Tests (`make integration`).
+- **Logs**: Documented log management policy (`./logs/`).
+
 ### Lessons Learned (2026-02-13)
 
 - **Git Workflow**: `git-mcp-server` is unreliable on Windows/Non-Admin due to path traversal issues. Use custom scripts (`scripts/gcom`, `scripts/gsync`) for consistent, error-free version control.
