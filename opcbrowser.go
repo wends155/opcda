@@ -18,39 +18,51 @@ import (
 //	mock := &mockBrowserProvider{}
 //	browser := &OPCBrowser{provider: mock}
 type browserProvider interface {
+	// GetItemID retrieves the item ID for the specified item data ID.
 	GetItemID(szItemDataID string) (string, error)
+	// QueryOrganization retrieves the organization of the address space.
 	QueryOrganization() (com.OPCNAMESPACETYPE, error)
+	// BrowseOPCItemIDs browses the address space for item IDs.
 	BrowseOPCItemIDs(dwBrowseFilterType com.OPCBROWSETYPE, szFilterCriteria string, vtDataTypeFilter uint16, dwAccessRightsFilter uint32) ([]string, error)
+	// ChangeBrowsePosition changes the current browse position.
 	ChangeBrowsePosition(dwBrowseDirection com.OPCBROWSEDIRECTION, szString string) error
+	// Release releases the COM resources associated with the provider.
 	Release()
 }
 
+// comBrowserProvider is the concrete implementation of browserProvider using COM.
 type comBrowserProvider struct {
 	iBrowseServerAddressSpace *com.IOPCBrowseServerAddressSpace
 }
 
+// GetItemID retrieves the item ID for the specified item data ID.
 func (p *comBrowserProvider) GetItemID(szItemDataID string) (string, error) {
 	return p.iBrowseServerAddressSpace.GetItemID(szItemDataID)
 }
 
+// QueryOrganization retrieves the organization of the address space.
 func (p *comBrowserProvider) QueryOrganization() (com.OPCNAMESPACETYPE, error) {
 	return p.iBrowseServerAddressSpace.QueryOrganization()
 }
 
+// BrowseOPCItemIDs browses the address space for item IDs.
 func (p *comBrowserProvider) BrowseOPCItemIDs(dwBrowseFilterType com.OPCBROWSETYPE, szFilterCriteria string, vtDataTypeFilter uint16, dwAccessRightsFilter uint32) ([]string, error) {
 	return p.iBrowseServerAddressSpace.BrowseOPCItemIDs(dwBrowseFilterType, szFilterCriteria, vtDataTypeFilter, dwAccessRightsFilter)
 }
 
+// ChangeBrowsePosition changes the current browse position.
 func (p *comBrowserProvider) ChangeBrowsePosition(dwBrowseDirection com.OPCBROWSEDIRECTION, szString string) error {
 	return p.iBrowseServerAddressSpace.ChangeBrowsePosition(dwBrowseDirection, szString)
 }
 
+// Release releases the COM resources associated with the provider.
 func (p *comBrowserProvider) Release() {
 	if p.iBrowseServerAddressSpace != nil {
 		p.iBrowseServerAddressSpace.Release()
 	}
 }
 
+// OPCBrowser represents a browser for OPC item IDs.
 type OPCBrowser struct {
 	provider     browserProvider
 	filter       string
@@ -60,6 +72,7 @@ type OPCBrowser struct {
 	parent       *OPCServer
 }
 
+// NewOPCBrowser creates a new OPCBrowser instance.
 func NewOPCBrowser(parent *OPCServer) (*OPCBrowser, error) {
 	if parent == nil || parent.provider == nil {
 		return nil, errors.New("parent server is nil or uninitialized")
@@ -72,6 +85,7 @@ func NewOPCBrowser(parent *OPCServer) (*OPCBrowser, error) {
 	return newOPCBrowserWithProvider(&comBrowserProvider{iBrowseServerAddressSpace: &com.IOPCBrowseServerAddressSpace{IUnknown: iBrowseServerAddressSpace}}, parent), nil
 }
 
+// newOPCBrowserWithProvider creates a new OPCBrowser with a specific provider (internal).
 func newOPCBrowserWithProvider(provider browserProvider, parent *OPCServer) *OPCBrowser {
 	return &OPCBrowser{
 		provider:     provider,
@@ -80,7 +94,7 @@ func newOPCBrowserWithProvider(provider browserProvider, parent *OPCServer) *OPC
 	}
 }
 
-// GetFilter get the filter that applies to ShowBranches and ShowLeafs methods
+// GetFilter returns the filter that applies to ShowBranches and ShowLeafs methods.
 func (b *OPCBrowser) GetFilter() string {
 	if b == nil {
 		return ""
@@ -88,7 +102,7 @@ func (b *OPCBrowser) GetFilter() string {
 	return b.filter
 }
 
-// SetFilter set the filter that applies to ShowBranches and ShowLeafs methods
+// SetFilter sets the filter that applies to ShowBranches and ShowLeafs methods.
 func (b *OPCBrowser) SetFilter(filter string) {
 	if b == nil {
 		return
@@ -96,8 +110,8 @@ func (b *OPCBrowser) SetFilter(filter string) {
 	b.filter = filter
 }
 
-// GetDataType get the requested data type that applies to ShowLeafs methods. This property defaults to
-// com.VT_EMPTY, which means that any data type is acceptable.
+// GetDataType returns the requested data type that applies to ShowLeafs methods.
+// This property defaults to com.VT_EMPTY, which means that any data type is acceptable.
 func (b *OPCBrowser) GetDataType() uint16 {
 	if b == nil {
 		return 0
@@ -105,7 +119,7 @@ func (b *OPCBrowser) GetDataType() uint16 {
 	return b.dataType
 }
 
-// SetDataType set the requested data type that applies to ShowLeafs methods.
+// SetDataType sets the requested data type that applies to ShowLeafs methods.
 func (b *OPCBrowser) SetDataType(dataType uint16) {
 	if b == nil {
 		return
@@ -113,7 +127,7 @@ func (b *OPCBrowser) SetDataType(dataType uint16) {
 	b.dataType = dataType
 }
 
-// GetAccessRights get the requested access rights that apply to the ShowLeafs methods
+// GetAccessRights returns the requested access rights that apply to the ShowLeafs methods.
 func (b *OPCBrowser) GetAccessRights() uint32 {
 	if b == nil {
 		return 0
@@ -121,7 +135,7 @@ func (b *OPCBrowser) GetAccessRights() uint32 {
 	return b.accessRights
 }
 
-// SetAccessRights set the requested access rights that apply to the ShowLeafs methods
+// SetAccessRights sets the requested access rights that apply to the ShowLeafs methods.
 func (b *OPCBrowser) SetAccessRights(accessRights uint32) error {
 	if b == nil {
 		return errors.New("uninitialized browser")
@@ -133,7 +147,7 @@ func (b *OPCBrowser) SetAccessRights(accessRights uint32) error {
 	return nil
 }
 
-// GetCurrentPosition Returns the current position in the tree
+// GetCurrentPosition returns the current position in the tree.
 func (b *OPCBrowser) GetCurrentPosition() (string, error) {
 	if b == nil || b.provider == nil {
 		return "", errors.New("uninitialized browser")
@@ -142,7 +156,7 @@ func (b *OPCBrowser) GetCurrentPosition() (string, error) {
 	return id, err
 }
 
-// GetOrganization Returns either OPCHierarchical or OPCFlat.
+// GetOrganization returns either OPCHierarchical or OPCFlat.
 func (b *OPCBrowser) GetOrganization() (com.OPCNAMESPACETYPE, error) {
 	if b == nil || b.provider == nil {
 		return 0, errors.New("uninitialized browser")
@@ -150,7 +164,7 @@ func (b *OPCBrowser) GetOrganization() (com.OPCNAMESPACETYPE, error) {
 	return b.provider.QueryOrganization()
 }
 
-// GetCount Required property for collections
+// GetCount returns the number of items in the collection.
 func (b *OPCBrowser) GetCount() int {
 	if b == nil {
 		return 0
@@ -169,7 +183,7 @@ func (b *OPCBrowser) Item(index int) (string, error) {
 	return b.names[index], nil
 }
 
-// ShowBranches Fills the collection with names of the branches at the current browse position.
+// ShowBranches fills the collection with names of the branches at the current browse position.
 func (b *OPCBrowser) ShowBranches() error {
 	if b == nil || b.provider == nil {
 		return errors.New("uninitialized browser")
@@ -180,7 +194,7 @@ func (b *OPCBrowser) ShowBranches() error {
 	return err
 }
 
-// ShowLeafs Fills the collection with the names of the leafs at the current browse position
+// ShowLeafs fills the collection with the names of the leafs at the current browse position.
 func (b *OPCBrowser) ShowLeafs(flat bool) error {
 	if b == nil || b.provider == nil {
 		return errors.New("uninitialized browser")
@@ -195,7 +209,7 @@ func (b *OPCBrowser) ShowLeafs(flat bool) error {
 	return err
 }
 
-// MoveUp Move up one level in the tree.
+// MoveUp moves up one level in the tree.
 func (b *OPCBrowser) MoveUp() error {
 	if b == nil || b.provider == nil {
 		return errors.New("uninitialized browser")
@@ -203,7 +217,7 @@ func (b *OPCBrowser) MoveUp() error {
 	return b.provider.ChangeBrowsePosition(OPC_BROWSE_UP, "")
 }
 
-// MoveToRoot Move up to the first level in the tree.
+// MoveToRoot moves up to the first level in the tree.
 func (b *OPCBrowser) MoveToRoot() {
 	if b == nil || b.provider == nil {
 		return
@@ -216,7 +230,7 @@ func (b *OPCBrowser) MoveToRoot() {
 	}
 }
 
-// MoveDown Move down into this branch.
+// MoveDown moves down into this branch.
 func (b *OPCBrowser) MoveDown(name string) error {
 	if b == nil || b.provider == nil {
 		return errors.New("uninitialized browser")
@@ -224,7 +238,7 @@ func (b *OPCBrowser) MoveDown(name string) error {
 	return b.provider.ChangeBrowsePosition(OPC_BROWSE_DOWN, name)
 }
 
-// MoveTo Move to an absolute position.
+// MoveTo moves to an absolute position.
 func (b *OPCBrowser) MoveTo(branches []string) error {
 	if b == nil || b.provider == nil {
 		return errors.New("uninitialized browser")
@@ -239,7 +253,7 @@ func (b *OPCBrowser) MoveTo(branches []string) error {
 	return nil
 }
 
-// GetItemID Given a name, returns a valid ItemID that can be passed to OPCItems Add method.
+// GetItemID gives a name and returns a valid ItemID that can be passed to OPCItems Add method.
 func (b *OPCBrowser) GetItemID(leaf string) (string, error) {
 	if b == nil || b.provider == nil {
 		return "", errors.New("uninitialized browser")
@@ -247,7 +261,7 @@ func (b *OPCBrowser) GetItemID(leaf string) (string, error) {
 	return b.provider.GetItemID(leaf)
 }
 
-// Release release the OPCBrowser
+// Release releases the OPCBrowser.
 func (b *OPCBrowser) Release() {
 	if b == nil || b.provider == nil {
 		return

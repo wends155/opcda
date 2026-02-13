@@ -10,6 +10,7 @@ import (
 	"github.com/wends155/opcda/com"
 )
 
+// OPCItem represents a single OPC item.
 type OPCItem struct {
 	itemMgtProvider itemMgtProvider
 	groupProvider   groupProvider
@@ -29,7 +30,7 @@ type OPCItem struct {
 	parent            *OPCItems
 }
 
-// GetParent Returns reference to the parent OPCItems object.
+// GetParent returns a reference to the parent OPCItems object.
 func (i *OPCItem) GetParent() *OPCItems {
 	if i == nil {
 		return nil
@@ -37,7 +38,7 @@ func (i *OPCItem) GetParent() *OPCItems {
 	return i.parent
 }
 
-// GetClientHandle get the client handle for the item.
+// GetClientHandle returns the client handle for the item.
 func (i *OPCItem) GetClientHandle() uint32 {
 	if i == nil {
 		return 0
@@ -45,7 +46,7 @@ func (i *OPCItem) GetClientHandle() uint32 {
 	return i.clientHandle
 }
 
-// SetClientHandle set the client handle for the item.
+// SetClientHandle sets the client handle for the item.
 func (i *OPCItem) SetClientHandle(clientHandle uint32) error {
 	if i == nil || i.itemMgtProvider == nil {
 		return errors.New("uninitialized item")
@@ -63,7 +64,7 @@ func (i *OPCItem) SetClientHandle(clientHandle uint32) error {
 	return nil
 }
 
-// GetServerHandle get the server handle for the item.
+// GetServerHandle returns the server handle for the item.
 func (i *OPCItem) GetServerHandle() uint32 {
 	if i == nil {
 		return 0
@@ -71,7 +72,7 @@ func (i *OPCItem) GetServerHandle() uint32 {
 	return i.serverHandle
 }
 
-// GetAccessPath get the access path for the item.
+// GetAccessPath returns the access path for the item.
 func (i *OPCItem) GetAccessPath() string {
 	if i == nil {
 		return ""
@@ -79,7 +80,7 @@ func (i *OPCItem) GetAccessPath() string {
 	return i.accessPath
 }
 
-// GetAccessRights get the access rights for the item.
+// GetAccessRights returns the access rights for the item.
 func (i *OPCItem) GetAccessRights() uint32 {
 	if i == nil {
 		return 0
@@ -87,7 +88,7 @@ func (i *OPCItem) GetAccessRights() uint32 {
 	return i.accessRights
 }
 
-// GetItemID get the item ID for the item.
+// GetItemID returns the item ID for the item.
 func (i *OPCItem) GetItemID() string {
 	if i == nil {
 		return ""
@@ -95,7 +96,7 @@ func (i *OPCItem) GetItemID() string {
 	return i.tag
 }
 
-// GetIsActive get the active state for the item.
+// GetIsActive returns the active state for the item.
 func (i *OPCItem) GetIsActive() bool {
 	if i == nil {
 		return false
@@ -105,7 +106,7 @@ func (i *OPCItem) GetIsActive() bool {
 	return i.isActive
 }
 
-// GetRequestedDataType get the requested data type for the item.
+// GetRequestedDataType returns the requested data type for the item.
 func (i *OPCItem) GetRequestedDataType() com.VT {
 	if i == nil {
 		return com.VT_EMPTY
@@ -115,7 +116,7 @@ func (i *OPCItem) GetRequestedDataType() com.VT {
 	return i.requestedDataType
 }
 
-// SetRequestedDataType set the requested data type for the item.
+// SetRequestedDataType sets the requested data type for the item.
 func (i *OPCItem) SetRequestedDataType(requestedDataType com.VT) error {
 	if i == nil || i.itemMgtProvider == nil {
 		return errors.New("uninitialized item")
@@ -133,7 +134,7 @@ func (i *OPCItem) SetRequestedDataType(requestedDataType com.VT) error {
 	return nil
 }
 
-// SetIsActive set the active state for the item.
+// SetIsActive sets the active state for the item.
 func (i *OPCItem) SetIsActive(isActive bool) error {
 	if i == nil || i.itemMgtProvider == nil {
 		return errors.New("uninitialized item")
@@ -151,7 +152,7 @@ func (i *OPCItem) SetIsActive(isActive bool) error {
 	return nil
 }
 
-// GetValue Returns the latest value read from the server
+// GetValue returns the latest value read from the server.
 func (i *OPCItem) GetValue() interface{} {
 	if i == nil {
 		return nil
@@ -161,7 +162,7 @@ func (i *OPCItem) GetValue() interface{} {
 	return i.value
 }
 
-// GetQuality Returns the latest quality read from the server
+// GetQuality returns the latest quality read from the server.
 func (i *OPCItem) GetQuality() uint16 {
 	if i == nil {
 		return 0
@@ -171,7 +172,7 @@ func (i *OPCItem) GetQuality() uint16 {
 	return i.quality
 }
 
-// GetTimestamp Returns the latest timestamp read from the server
+// GetTimestamp returns the latest timestamp read from the server.
 func (i *OPCItem) GetTimestamp() time.Time {
 	if i == nil {
 		return time.Time{}
@@ -181,7 +182,7 @@ func (i *OPCItem) GetTimestamp() time.Time {
 	return i.timestamp
 }
 
-// GetCanonicalDataType Returns the canonical data type for the item.
+// GetCanonicalDataType returns the canonical data type for the item.
 func (i *OPCItem) GetCanonicalDataType() com.VT {
 	if i == nil {
 		return com.VT_EMPTY
@@ -189,7 +190,7 @@ func (i *OPCItem) GetCanonicalDataType() com.VT {
 	return i.nativeDataType
 }
 
-// GetEUType Returns the EU type for the item.
+// GetEUType returns the EU type for the item.
 func (i *OPCItem) GetEUType() (int, error) {
 	if i == nil || i.parent == nil || i.parent.parent == nil || i.parent.parent.parent == nil {
 		return 0, errors.New("uninitialized item")
@@ -204,7 +205,7 @@ func (i *OPCItem) GetEUType() (int, error) {
 	return (int)(data[0].(int32)), nil
 }
 
-// GetEUInfo Returns the EU info for the item.
+// GetEUInfo returns the EU info for the item.
 func (i *OPCItem) GetEUInfo() (interface{}, error) {
 	if i == nil {
 		return nil, errors.New("uninitialized item")
@@ -229,6 +230,7 @@ func (i *OPCItem) GetEUInfo() (interface{}, error) {
 	return data[0], nil
 }
 
+// NewOPCItem creates a new OPCItem instance (internal constructor).
 func NewOPCItem(
 	parent *OPCItems,
 	tag string,

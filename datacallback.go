@@ -12,6 +12,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// IID_IOPCDataCallback is the GUID for the IOPCDataCallback interface.
 var IID_IOPCDataCallback = windows.GUID{
 	Data1: 0x39c13a70,
 	Data2: 0x011e,
@@ -19,6 +20,7 @@ var IID_IOPCDataCallback = windows.GUID{
 	Data4: [8]byte{0x96, 0x75, 0x00, 0x20, 0xaf, 0xd8, 0xad, 0xb3},
 }
 
+// DataEventReceiver handles COM callbacks for data events.
 type DataEventReceiver struct {
 	lpVtbl                 *DataEventReceiverVtbl
 	ref                    int32
@@ -29,6 +31,7 @@ type DataEventReceiver struct {
 	cancelCompleteReceiver chan *CCancelCompleteCallBackData
 }
 
+// DataEventReceiverVtbl defines the VTable for the DataEventReceiver COM object.
 type DataEventReceiverVtbl struct {
 	pQueryInterface   uintptr
 	pAddRef           uintptr
@@ -39,6 +42,7 @@ type DataEventReceiverVtbl struct {
 	pOnCancelComplete uintptr
 }
 
+// NewDataEventReceiver creates a new DataEventReceiver.
 func NewDataEventReceiver(
 	dataChangeReceiver chan *CDataChangeCallBackData,
 	readCompleteReceiver chan *CReadCompleteCallBackData,
@@ -64,6 +68,7 @@ func NewDataEventReceiver(
 	}
 }
 
+// DataQueryInterface handles the QueryInterface COM method.
 func DataQueryInterface(this unsafe.Pointer, iid *windows.GUID, punk *unsafe.Pointer) uintptr {
 	er := (*DataEventReceiver)(this)
 	*punk = nil
@@ -75,18 +80,21 @@ func DataQueryInterface(this unsafe.Pointer, iid *windows.GUID, punk *unsafe.Poi
 	return com.E_POINTER
 }
 
+// DataAddRef handles the AddRef COM method.
 func DataAddRef(this unsafe.Pointer) uintptr {
 	er := (*DataEventReceiver)(this)
 	er.ref++
 	return uintptr(er.ref)
 }
 
+// DataRelease handles the Release COM method.
 func DataRelease(this unsafe.Pointer) uintptr {
 	er := (*DataEventReceiver)(this)
 	er.ref--
 	return uintptr(er.ref)
 }
 
+// CDataChangeCallBackData holds data for the OnDataChange event.
 type CDataChangeCallBackData struct {
 	TransID           uint32
 	GroupHandle       uint32
@@ -99,6 +107,7 @@ type CDataChangeCallBackData struct {
 	Errors            []int32
 }
 
+// DataOnDataChange handles the OnDataChange COM callback.
 func DataOnDataChange(this unsafe.Pointer, dwTransid uint32, hGroup uint32, hrMasterquality int32, hrMastererror int32, dwCount uint32, phClientItems unsafe.Pointer, pvValues unsafe.Pointer, pwQualities unsafe.Pointer, pftTimeStamps unsafe.Pointer, pErrors unsafe.Pointer) uintptr {
 	er := (*DataEventReceiver)(this)
 	clientHandles := make([]uint32, dwCount)
@@ -134,6 +143,7 @@ func DataOnDataChange(this unsafe.Pointer, dwTransid uint32, hGroup uint32, hrMa
 	return com.S_OK
 }
 
+// CReadCompleteCallBackData holds data for the OnReadComplete event.
 type CReadCompleteCallBackData struct {
 	TransID           uint32
 	GroupHandle       uint32
@@ -146,6 +156,7 @@ type CReadCompleteCallBackData struct {
 	Errors            []int32
 }
 
+// DataOnReadComplete handles the OnReadComplete COM callback.
 func DataOnReadComplete(this unsafe.Pointer, dwTransid uint32, hGroup uint32, hrMasterquality int32, hrMastererror int32, dwCount uint32, phClientItems unsafe.Pointer, pvValues unsafe.Pointer, pwQualities unsafe.Pointer, pftTimeStamps unsafe.Pointer, pErrors unsafe.Pointer) uintptr {
 	er := (*DataEventReceiver)(this)
 	clientHandles := make([]uint32, dwCount)
@@ -181,6 +192,7 @@ func DataOnReadComplete(this unsafe.Pointer, dwTransid uint32, hGroup uint32, hr
 	return com.S_OK
 }
 
+// CWriteCompleteCallBackData holds data for the OnWriteComplete event.
 type CWriteCompleteCallBackData struct {
 	TransID           uint32
 	GroupHandle       uint32
@@ -189,6 +201,7 @@ type CWriteCompleteCallBackData struct {
 	Errors            []int32
 }
 
+// DataOnWriteComplete handles the OnWriteComplete COM callback.
 func DataOnWriteComplete(this unsafe.Pointer, dwTransid uint32, hGroup uint32, hrMastererr int32, dwCount uint32, pClienthandles unsafe.Pointer, pErrors unsafe.Pointer) uintptr {
 	er := (*DataEventReceiver)(this)
 	clientHandles := make([]uint32, dwCount)
@@ -208,11 +221,13 @@ func DataOnWriteComplete(this unsafe.Pointer, dwTransid uint32, hGroup uint32, h
 	return com.S_OK
 }
 
+// CCancelCompleteCallBackData holds data for the OnCancelComplete event.
 type CCancelCompleteCallBackData struct {
 	TransID     uint32
 	GroupHandle uint32
 }
 
+// DataOnCancelComplete handles the OnCancelComplete COM callback.
 func DataOnCancelComplete(this unsafe.Pointer, dwTransid uint32, hGroup uint32) uintptr {
 	er := (*DataEventReceiver)(this)
 	cb := &CCancelCompleteCallBackData{

@@ -14,66 +14,91 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// groupProvider defines the internal contract for interacting with an OPC group.
+// It abstracts the underlying COM implementation to allow for mocking and testing.
 type groupProvider interface {
+	// SetName sets the name of the group.
 	SetName(name string) error
+	// GetState retrieves the current state of the group.
 	GetState() (updateRate uint32, active bool, name string, timeBias int32, deadband float32, localeID uint32, clientHandle uint32, serverHandle uint32, err error)
+	// SetState sets the state of the group.
 	SetState(pRequestedUpdateRate *uint32, pActive *int32, pTimeBias *int32, pPercentDeadband *float32, pLCID *uint32, phClientGroup *uint32) (pRevisedUpdateRate uint32, err error)
+	// SyncRead performs a synchronous read of item values.
 	SyncRead(source com.OPCDATASOURCE, serverHandles []uint32) ([]*com.ItemState, []int32, error)
+	// SyncWrite performs a synchronous write of item values.
 	SyncWrite(serverHandles []uint32, values []com.VARIANT) ([]int32, error)
+	// AsyncRead performs an asynchronous read of item values.
 	AsyncRead(serverHandles []uint32, transactionID uint32) (cancelID uint32, errs []int32, err error)
+	// AsyncWrite performs an asynchronous write of item values.
 	AsyncWrite(serverHandles []uint32, values []com.VARIANT, transactionID uint32) (cancelID uint32, errs []int32, err error)
+	// AsyncRefresh forces a callback with current data for all active items.
 	AsyncRefresh(source com.OPCDATASOURCE, transactionID uint32) (cancelID uint32, err error)
+	// AsyncCancel cancels an outstanding asynchronous operation.
 	AsyncCancel(cancelID uint32) error
+	// QueryInterface queries the group for a specific interface.
 	QueryInterface(iid *windows.GUID, ppv unsafe.Pointer) error
+	// Release releases the COM resources associated with the provider.
 	Release()
 }
 
+// comGroupProvider is the concrete implementation of groupProvider using COM.
 type comGroupProvider struct {
 	groupStateMgt *com.IOPCGroupStateMgt
 	syncIO        *com.IOPCSyncIO
 	asyncIO2      *com.IOPCAsyncIO2
 }
 
+// SetName sets the name of the group.
 func (p *comGroupProvider) SetName(name string) error {
 	return p.groupStateMgt.SetName(name)
 }
 
+// GetState retrieves the current state of the group.
 func (p *comGroupProvider) GetState() (uint32, bool, string, int32, float32, uint32, uint32, uint32, error) {
 	return p.groupStateMgt.GetState()
 }
 
+// SetState sets the state of the group.
 func (p *comGroupProvider) SetState(pRequestedUpdateRate *uint32, pActive *int32, pTimeBias *int32, pPercentDeadband *float32, pLCID *uint32, phClientGroup *uint32) (uint32, error) {
 	return p.groupStateMgt.SetState(pRequestedUpdateRate, pActive, pTimeBias, pPercentDeadband, pLCID, phClientGroup)
 }
 
+// SyncRead performs a synchronous read of item values.
 func (p *comGroupProvider) SyncRead(source com.OPCDATASOURCE, serverHandles []uint32) ([]*com.ItemState, []int32, error) {
 	return p.syncIO.Read(source, serverHandles)
 }
 
+// SyncWrite performs a synchronous write of item values.
 func (p *comGroupProvider) SyncWrite(serverHandles []uint32, values []com.VARIANT) ([]int32, error) {
 	return p.syncIO.Write(serverHandles, values)
 }
 
+// AsyncRead performs an asynchronous read of item values.
 func (p *comGroupProvider) AsyncRead(serverHandles []uint32, transactionID uint32) (uint32, []int32, error) {
 	return p.asyncIO2.Read(serverHandles, transactionID)
 }
 
+// AsyncWrite performs an asynchronous write of item values.
 func (p *comGroupProvider) AsyncWrite(serverHandles []uint32, values []com.VARIANT, transactionID uint32) (uint32, []int32, error) {
 	return p.asyncIO2.Write(serverHandles, values, transactionID)
 }
 
+// AsyncRefresh forces a callback with current data for all active items.
 func (p *comGroupProvider) AsyncRefresh(source com.OPCDATASOURCE, transactionID uint32) (uint32, error) {
 	return p.asyncIO2.Refresh2(source, transactionID)
 }
 
+// AsyncCancel cancels an outstanding asynchronous operation.
 func (p *comGroupProvider) AsyncCancel(cancelID uint32) error {
 	return p.asyncIO2.Cancel2(cancelID)
 }
 
+// QueryInterface queries the group for a specific interface.
 func (p *comGroupProvider) QueryInterface(iid *windows.GUID, ppv unsafe.Pointer) error {
 	return p.groupStateMgt.IUnknown.QueryInterface(iid, ppv)
 }
 
+// Release releases the COM resources associated with the provider.
 func (p *comGroupProvider) Release() {
 	if p.groupStateMgt != nil {
 		p.groupStateMgt.Release()
@@ -86,6 +111,7 @@ func (p *comGroupProvider) Release() {
 	}
 }
 
+// OPCGroup represents a group of OPC items.
 type OPCGroup struct {
 	parent             *OPCGroups
 	provider           serverProvider
@@ -108,6 +134,7 @@ type OPCGroup struct {
 	cancelCompleteList []chan *CancelCompleteCallBackData
 }
 
+// NewOPCGroup creates a new OPCGroup instance.
 func NewOPCGroup(
 	opcGroups *OPCGroups,
 	iUnknown *com.IUnknown,
@@ -156,7 +183,7 @@ func NewOPCGroup(
 	return o, nil
 }
 
-// GetParent Returns reference to the parent OPCServer object
+// GetParent returns a reference to the parent OPCServer object.
 func (g *OPCGroup) GetParent() *OPCGroups {
 	if g == nil {
 		return nil
@@ -164,7 +191,7 @@ func (g *OPCGroup) GetParent() *OPCGroups {
 	return g.parent
 }
 
-// GetName Returns the name of the group
+// GetName returns the name of the group.
 func (g *OPCGroup) GetName() string {
 	if g == nil {
 		return ""
@@ -172,7 +199,7 @@ func (g *OPCGroup) GetName() string {
 	return g.groupName
 }
 
-// SetName set the name of the group
+// SetName sets the name of the group.
 func (g *OPCGroup) SetName(name string) error {
 	if g == nil || g.groupProvider == nil {
 		return errors.New("uninitialized group")
@@ -185,7 +212,7 @@ func (g *OPCGroup) SetName(name string) error {
 	return nil
 }
 
-// GetIsActive Returns whether the group is active
+// GetIsActive returns whether the group is active.
 func (g *OPCGroup) GetIsActive() bool {
 	if g == nil || g.groupProvider == nil {
 		return false
@@ -197,7 +224,7 @@ func (g *OPCGroup) GetIsActive() bool {
 	return b
 }
 
-// SetIsActive set whether the group is active
+// SetIsActive sets whether the group is active.
 func (g *OPCGroup) SetIsActive(isActive bool) error {
 	if g == nil || g.groupProvider == nil {
 		return errors.New("uninitialized group")
@@ -207,7 +234,7 @@ func (g *OPCGroup) SetIsActive(isActive bool) error {
 	return err
 }
 
-// GetClientHandle get a Long value associated with the group
+// GetClientHandle returns the client handle associated with the group.
 func (g *OPCGroup) GetClientHandle() uint32 {
 	if g == nil {
 		return 0
@@ -215,7 +242,7 @@ func (g *OPCGroup) GetClientHandle() uint32 {
 	return g.clientGroupHandle
 }
 
-// SetClientHandle set a Long value associated with the group
+// SetClientHandle sets the client handle associated with the group.
 func (g *OPCGroup) SetClientHandle(clientHandle uint32) error {
 	if g == nil || g.groupProvider == nil {
 		return errors.New("uninitialized group")
@@ -228,7 +255,7 @@ func (g *OPCGroup) SetClientHandle(clientHandle uint32) error {
 	return nil
 }
 
-// GetServerHandle get the server assigned handle for the group
+// GetServerHandle returns the server assigned handle for the group.
 func (g *OPCGroup) GetServerHandle() uint32 {
 	if g == nil {
 		return 0
@@ -236,7 +263,7 @@ func (g *OPCGroup) GetServerHandle() uint32 {
 	return g.serverGroupHandle
 }
 
-// GetLocaleID get the locale identifier for the group
+// GetLocaleID returns the locale identifier for the group.
 func (g *OPCGroup) GetLocaleID() (uint32, error) {
 	if g == nil || g.groupProvider == nil {
 		return 0, errors.New("uninitialized group")
@@ -245,7 +272,7 @@ func (g *OPCGroup) GetLocaleID() (uint32, error) {
 	return localeID, err
 }
 
-// SetLocaleID set the locale identifier for the group
+// SetLocaleID sets the locale identifier for the group.
 func (g *OPCGroup) SetLocaleID(id uint32) error {
 	if g == nil || g.groupProvider == nil {
 		return errors.New("uninitialized group")
@@ -254,7 +281,8 @@ func (g *OPCGroup) SetLocaleID(id uint32) error {
 	return err
 }
 
-// GetTimeBias This property provides the information needed to convert the time stamp on the data back to the local time of the device
+// GetTimeBias returns the time bias for the group.
+// This property provides the information needed to convert the time stamp on the data back to the local time of the device.
 func (g *OPCGroup) GetTimeBias() (int32, error) {
 	if g == nil || g.groupProvider == nil {
 		return 0, errors.New("uninitialized group")
@@ -263,7 +291,7 @@ func (g *OPCGroup) GetTimeBias() (int32, error) {
 	return timeBias, err
 }
 
-// SetTimeBias This property provides the information needed to convert the time stamp on the data back to the local time of the device
+// SetTimeBias sets the time bias for the group.
 func (g *OPCGroup) SetTimeBias(timeBias int32) error {
 	if g == nil || g.groupProvider == nil {
 		return errors.New("uninitialized group")
@@ -272,7 +300,8 @@ func (g *OPCGroup) SetTimeBias(timeBias int32) error {
 	return err
 }
 
-// GetDeadband A deadband is expressed as percent of full scale (legal values 0 to 100).
+// GetDeadband returns the deadband for the group.
+// A deadband is expressed as percent of full scale (legal values 0 to 100).
 func (g *OPCGroup) GetDeadband() (float32, error) {
 	if g == nil || g.groupProvider == nil {
 		return 0, errors.New("uninitialized group")
@@ -281,7 +310,7 @@ func (g *OPCGroup) GetDeadband() (float32, error) {
 	return deadband, err
 }
 
-// SetDeadband A deadband is expressed as percent of full scale (legal values 0 to 100).
+// SetDeadband sets the deadband for the group.
 func (g *OPCGroup) SetDeadband(deadband float32) error {
 	if g == nil || g.groupProvider == nil {
 		return errors.New("uninitialized group")
@@ -290,7 +319,7 @@ func (g *OPCGroup) SetDeadband(deadband float32) error {
 	return err
 }
 
-// GetUpdateRate
+// GetUpdateRate returns the update rate for the group.
 // The fastest rate at which data change events may be fired. A slow process might
 // cause data changes to fire at less than this rate, but they will never exceed this rate. Rate is in
 // milliseconds. This property’s default depends on the value set in the OPCGroups Collection.
@@ -305,7 +334,7 @@ func (g *OPCGroup) GetUpdateRate() (uint32, error) {
 	return updateRate, err
 }
 
-// SetUpdateRate set the update rate
+// SetUpdateRate sets the update rate for the group.
 func (g *OPCGroup) SetUpdateRate(updateRate uint32) error {
 	if g == nil || g.groupProvider == nil {
 		return errors.New("uninitialized group")

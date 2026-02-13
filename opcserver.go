@@ -18,15 +18,15 @@ import (
 type OPCServer struct {
 	provider   serverProvider
 	groups     *OPCGroups
-	Name       string // Name is the ProgID of the server.
-	Node       string // Node is the network node name where the server resides.
-	clientName string
-	location   com.CLSCTX
+	Name       string     // Name is the ProgID of the server.
+	Node       string     // Node is the network node name where the server resides.
+	clientName string     // clientName is the name of the client application.
+	location   com.CLSCTX // location indicates whether the server is local or remote.
 
-	container *com.IConnectionPointContainer
-	point     *com.IConnectionPoint
-	event     *ShutdownEventReceiver
-	cookie    uint32
+	container *com.IConnectionPointContainer // container manages connection points.
+	point     *com.IConnectionPoint          // point is the specific connection point.
+	event     *ShutdownEventReceiver         // event receives shutdown notifications.
+	cookie    uint32                         // cookie identifies the advisory connection.
 }
 
 // Connect establishes a connection to the OPC server.
