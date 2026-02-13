@@ -423,6 +423,8 @@ func (g *OPCGroup) RegisterDataChange(ch chan *DataChangeCallBackData) error {
 	if err != nil {
 		return err
 	}
+	g.callbackLock.Lock()
+	defer g.callbackLock.Unlock()
 	g.dataChangeList = append(g.dataChangeList, ch)
 	return nil
 }
@@ -436,6 +438,8 @@ func (g *OPCGroup) RegisterReadComplete(ch chan *ReadCompleteCallBackData) error
 	if err != nil {
 		return err
 	}
+	g.callbackLock.Lock()
+	defer g.callbackLock.Unlock()
 	g.readCompleteList = append(g.readCompleteList, ch)
 	return nil
 }
@@ -449,6 +453,8 @@ func (g *OPCGroup) RegisterWriteComplete(ch chan *WriteCompleteCallBackData) err
 	if err != nil {
 		return err
 	}
+	g.callbackLock.Lock()
+	defer g.callbackLock.Unlock()
 	g.writeCompleteList = append(g.writeCompleteList, ch)
 	return nil
 }
@@ -462,6 +468,8 @@ func (g *OPCGroup) RegisterCancelComplete(ch chan *CancelCompleteCallBackData) e
 	if err != nil {
 		return err
 	}
+	g.callbackLock.Lock()
+	defer g.callbackLock.Unlock()
 	g.cancelCompleteList = append(g.cancelCompleteList, ch)
 	return nil
 }
@@ -577,7 +585,12 @@ func (g *OPCGroup) fireDataChange(cbData *CDataChangeCallBackData) {
 		TimeStamps:        cbData.TimeStamps,
 		Errors:            itemErrors,
 	}
-	for _, backData := range g.dataChangeList {
+	g.callbackLock.Lock()
+	listeners := make([]chan *DataChangeCallBackData, len(g.dataChangeList))
+	copy(listeners, g.dataChangeList)
+	g.callbackLock.Unlock()
+
+	for _, backData := range listeners {
 		select {
 		case backData <- data:
 		default:
@@ -610,7 +623,12 @@ func (g *OPCGroup) fireReadComplete(cbData *CReadCompleteCallBackData) {
 		TimeStamps:        cbData.TimeStamps,
 		Errors:            itemErrors,
 	}
-	for _, backData := range g.readCompleteList {
+	g.callbackLock.Lock()
+	listeners := make([]chan *ReadCompleteCallBackData, len(g.readCompleteList))
+	copy(listeners, g.readCompleteList)
+	g.callbackLock.Unlock()
+
+	for _, backData := range listeners {
 		select {
 		case backData <- data:
 		default:
@@ -639,7 +657,12 @@ func (g *OPCGroup) fireWriteComplete(cbData *CWriteCompleteCallBackData) {
 		ItemClientHandles: cbData.ItemClientHandles,
 		Errors:            itemErrors,
 	}
-	for _, backData := range g.writeCompleteList {
+	g.callbackLock.Lock()
+	listeners := make([]chan *WriteCompleteCallBackData, len(g.writeCompleteList))
+	copy(listeners, g.writeCompleteList)
+	g.callbackLock.Unlock()
+
+	for _, backData := range listeners {
 		select {
 		case backData <- data:
 		default:
@@ -655,7 +678,12 @@ func (g *OPCGroup) fireCancelComplete(cbData *CCancelCompleteCallBackData) {
 		TransID:     cbData.TransID,
 		GroupHandle: cbData.GroupHandle,
 	}
-	for _, backData := range g.cancelCompleteList {
+	g.callbackLock.Lock()
+	listeners := make([]chan *CancelCompleteCallBackData, len(g.cancelCompleteList))
+	copy(listeners, g.cancelCompleteList)
+	g.callbackLock.Unlock()
+
+	for _, backData := range listeners {
 		backData <- data
 	}
 }

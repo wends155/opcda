@@ -76,6 +76,18 @@
 - **Log Management**: Centralize all temporary outputs in `./logs/`. Use `make clean` to maintain a tidy workspace.
 - **Documentation**: A comprehensive API Reference in `architecture.md` is critical for developer onboarding and AI context limits.
 - **Artifacts**: Maintain `task.md`, `implementation_plan.md`, and `walkthrough.md` as living documents to track progress and decisions.
+- **Data Safety (2026-02-13)**: Never use `rm` on the project root to clean up artifacts. Always target specific files or directories (e.g., `rm ./logs/*.log`). If unsure, do not delete.
+- **Process (2026-02-13)**: Mandated git checkpoints before every execution phase to mitigate risk of accidental deletion or regression.
+
+### Thread Safety implementation (2026-02-13)
+
+- **Change**: Implemented partial thread-safety for `OPCItem`, `OPCGroup`, and `OPCGroups`.
+- **Details**:
+    - **OPCItem**: Added `sync.RWMutex` to protect internal state (`value`, `quality`, `timestamp`, etc.).
+    - **OPCGroup**: Used `callbackLock` to protect event listener slices during registration and firing (using copy-on-write pattern for firing).
+    - **OPCGroups**: Added `Lock()` to `Release` method to prevent race conditions during iteration.
+- **Verification**: Validated with `race_test.go` (removed after verification) covering concurrent item access and group event registration.
+- **Documentation**: Updated `architecture.md` with Concurrency Model details.
 
 ### 🧩 Active Components & APIs
 * `opcda`: Core Go package.

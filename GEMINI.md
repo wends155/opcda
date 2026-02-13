@@ -4,7 +4,7 @@
 *   **`GEMINI.md`**: **Operational Source of Truth**. Rules, workflows, and agent behaviors.
 *   **`architecture.md`**: **Technical Source of Truth**. The immutable design spec.
 *   **`context.md`**: **Contextual Source of Truth**. The project's memory bank.
-*   **`task.md`**: **Execution Tracker**. Strictly for tracking approved implementation steps.
+*   **`task.md`**: **Execution Tracker**. Strictly for tracking approved implementation steps. **Mandatory:** The first item in any execution list must be `[ ] Create Git Checkpoint`.
 
 > 🛑 **Restricted Access**: Only **High-Reasoning Models** (Gemini 3 Pro / Claude Opus) are authorized to edit `GEMINI.md`, `architecture.md`, and `context.md`.
 > *   **The Builder** (Flash/Lower models) is **Read-Only** for these files and must strictly follow them.
@@ -68,3 +68,12 @@
 * **Scripts**:
     * `.\scripts\gcom "message"`: Combine `git add .` and `git commit -m`.
     * `.\scripts\gsync`: Combine `git pull --rebase` and `git push`.
+
+## 🛡️ Data Safety Protocol
+**Rule:** Prevention of accidental data loss is paramount.
+1.  **Deletion Restriction**: NEVER programmatically delete source files (`.go`, `.md`, etc.) in the project root or source directories.
+    *   **Allowed**: Deleting specific files in `./logs/`, `./temp/`, or the artifact directory.
+    *   **Prohibited**: `rm *`, `rm ./*`, or broad wildcard deletions in the root.
+2.  **Checkout vs Delete**: If a file needs to be reverted, use `git checkout <file>` instead of deleting it.
+3.  **Artifact Isolation**: All temporary artifacts (plans, reports, test files) must be kept in the artifact directory or a dedicated `./temp` folder. Do not mix them with source code.
+4.  **Mandatory Checkpoints**: Before applying any changes (Phase 2: Act), the Agent MUST create a git checkpoint using `scripts/gcom "wip: checkpoint before <task>"`. This ensures an easy revert path (`git reset --hard HEAD~1`) if destructive errors occur.

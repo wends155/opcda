@@ -4,15 +4,17 @@ package opcda
 
 import (
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/wends155/opcda/com"
 )
 
 type OPCItem struct {
-	itemMgtProvider   itemMgtProvider
-	groupProvider     groupProvider
-	provider          serverProvider
+	itemMgtProvider itemMgtProvider
+	groupProvider   groupProvider
+	provider        serverProvider
+	sync.RWMutex
 	value             interface{}
 	quality           uint16
 	timestamp         time.Time
@@ -55,7 +57,9 @@ func (i *OPCItem) SetClientHandle(clientHandle uint32) error {
 	if errs[0] < 0 {
 		return i.getError(errs[0])
 	}
+	i.Lock()
 	i.clientHandle = clientHandle
+	i.Unlock()
 	return nil
 }
 
@@ -96,6 +100,8 @@ func (i *OPCItem) GetIsActive() bool {
 	if i == nil {
 		return false
 	}
+	i.RLock()
+	defer i.RUnlock()
 	return i.isActive
 }
 
@@ -104,6 +110,8 @@ func (i *OPCItem) GetRequestedDataType() com.VT {
 	if i == nil {
 		return com.VT_EMPTY
 	}
+	i.RLock()
+	defer i.RUnlock()
 	return i.requestedDataType
 }
 
@@ -119,7 +127,9 @@ func (i *OPCItem) SetRequestedDataType(requestedDataType com.VT) error {
 	if errs[0] < 0 {
 		return i.getError(errs[0])
 	}
+	i.Lock()
 	i.requestedDataType = requestedDataType
+	i.Unlock()
 	return nil
 }
 
@@ -135,7 +145,9 @@ func (i *OPCItem) SetIsActive(isActive bool) error {
 	if errs[0] < 0 {
 		return i.getError(errs[0])
 	}
+	i.Lock()
 	i.isActive = isActive
+	i.Unlock()
 	return nil
 }
 
@@ -144,6 +156,8 @@ func (i *OPCItem) GetValue() interface{} {
 	if i == nil {
 		return nil
 	}
+	i.RLock()
+	defer i.RUnlock()
 	return i.value
 }
 
@@ -152,6 +166,8 @@ func (i *OPCItem) GetQuality() uint16 {
 	if i == nil {
 		return 0
 	}
+	i.RLock()
+	defer i.RUnlock()
 	return i.quality
 }
 
@@ -160,6 +176,8 @@ func (i *OPCItem) GetTimestamp() time.Time {
 	if i == nil {
 		return time.Time{}
 	}
+	i.RLock()
+	defer i.RUnlock()
 	return i.timestamp
 }
 
@@ -246,10 +264,16 @@ func (i *OPCItem) Read(source com.OPCDATASOURCE) (interface{}, uint16, time.Time
 	if errs[0] < 0 {
 		return nil, 0, time.Time{}, i.getError(errs[0])
 	}
-	i.value = values[0].Value
-	i.quality = values[0].Quality
-	i.timestamp = values[0].Timestamp
-	return i.value, i.quality, i.timestamp, nil
+	val := values[0].Value
+	qual := values[0].Quality
+	ts := values[0].Timestamp
+
+	i.Lock()
+	i.value = val
+	i.quality = qual
+	i.timestamp = ts
+	i.Unlock()
+	return val, qual, ts, nil
 }
 
 // Write writes a value to the item.

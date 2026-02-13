@@ -286,6 +286,8 @@ func (gs *OPCGroups) Release() error {
 	if gs == nil {
 		return nil
 	}
+	gs.Lock()
+	defer gs.Unlock()
 	for _, group := range gs.groups {
 		group.Release()
 	}
