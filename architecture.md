@@ -2,6 +2,10 @@
 
 This document describes the architectural design of the `opcda` library, a Go-based client for OPC DA (Data Access) servers using the COM/OLE Automation interface.
 
+> 🛑 **Governance**: This document is **Read-Only** during Execution.
+> *   **Edits**: Only permitted during the **Planning/Audit** phase by **High-Reasoning Models**.
+> *   **Process**: Modifications require a specific `implementation_plan.md` and explicit **User Approval**.
+
 ## 🏗️ High-Level Architecture
 
 The library is structured into four main layers, leveraging a **Provider Pattern** for dependency injection and testability:

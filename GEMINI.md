@@ -1,5 +1,14 @@
 # 🚀 Project Workflow: opcda Auditor
 
+## 📂 Documentation Ecosystem
+*   **`GEMINI.md`**: **Operational Source of Truth**. Rules, workflows, and agent behaviors.
+*   **`architecture.md`**: **Technical Source of Truth**. The immutable design spec.
+*   **`context.md`**: **Contextual Source of Truth**. The project's memory bank.
+*   **`task.md`**: **Execution Tracker**. Strictly for tracking approved implementation steps.
+
+> 🛑 **Restricted Access**: Only **High-Reasoning Models** (Gemini 3 Pro / Claude Opus) are authorized to edit `GEMINI.md`, `architecture.md`, and `context.md`.
+> *   **The Builder** (Flash/Lower models) is **Read-Only** for these files and must strictly follow them.
+
 ## 🧠 Model Roles
 
 ### 1. The Architect (Gemini 3 Pro)
@@ -18,6 +27,7 @@
 * **Triggers:** "Implement", "Write", "Code", "Generate", **"Proceed"**
 * **Responsibility:**
     * **Execute** the Architect's plan exactly.
+    * **Compliance**: Must strictly implement plans AND adhere to `architecture.md`. If a plan contradicts the architecture, STOP and query the Architect.
     * **Write** idiomatic Go code.
     * **Refine** code using `go fmt`, `go vet`, or `golangci-lint`.
 

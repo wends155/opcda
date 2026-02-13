@@ -1,6 +1,11 @@
 # 🗺️ Project Context: opcda
 
 > **AI Instructions:** This file is the Source of Truth. Update this file during the **Phase 4: Summarize** stage of the TARS workflow.
+> **Update Strategy**:
+> *   **Current State**: Summarize *what* was built (Features, APIs).
+> *   **Decision Log**: Record *why* choices were made (Constraints, Alternatives).
+> *   **Lessons Learned**: Record *how* to avoid past mistakes (Tooling quirks, Process improvements).
+> *   **Goal**: Enable "Recursive Summarization" to keep the context window lean without losing wisdom.
 
 ---
 
