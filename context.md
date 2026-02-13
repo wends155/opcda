@@ -93,6 +93,8 @@
 - **Data Safety (2026-02-13)**: Never use `rm` on the project root to clean up artifacts. Always target specific files or directories (e.g., `rm ./logs/*.log`). If unsure, do not delete.
 - **Process (2026-02-13)**: Mandated git checkpoints before every execution phase to mitigate risk of accidental deletion or regression.
 - **Godoc Usage (2026-02-13)**: Confirmed `mcp_godoc_get_doc` fails with "module verification" errors when using absolute paths for local packages. **Action**: Always use `path="."` combined with `working_dir="<project_root>"` for local queries.
+- **Process Breach (2026-02-13)**: Skipping the "Think" phase leads to unapproved changes and context drift. **Action**: Implemented "Planning Gate" protocol in `GEMINI.md` to lock the Agent into Planning Mode until user approval.
+- **File Editing (2026-02-13)**: `replace_file_content` failed repeatedly on `GEMINI.md` due to subtle spacing/newline mismatches. **Action**: When diffs fail twice, switch to `write_to_file` for a complete overwrite to ensure data integrity.
 
 ### Thread Safety implementation (2026-02-13)
 

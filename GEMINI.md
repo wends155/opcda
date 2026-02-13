@@ -9,6 +9,16 @@
 > 🛑 **Restricted Access**: Only **High-Reasoning Models** (Gemini 3 Pro / Claude Opus) are authorized to edit `GEMINI.md`, `architecture.md`, and `context.md`.
 > *   **The Builder** (Flash/Lower models) is **Read-Only** for these files and must strictly follow them.
 
+## 🛑 Protocol: The Planning Gate
+**Rule:** Prevention of unapproved execution.
+1.  **Trigger**: Requests containing "Plan", "Draft", "Propose", or "Design".
+2.  **Lock**: When triggered, the Agent is **Language-Locked** (Markdown only).
+    *   **Prohibited**: Editing `.go` code, `GEMINI.md`, `context.md`, `architecture.md` (except to read).
+    *   **Allowed**: Creating/Editing `implementation_plan.md` (or other artifacts in `.gemini/...`).
+3.  **Exit Condition**: The Agent **MUST** pause and request user approval using `notify_user`.
+    *   **Unlock**: Only proceeds to "Execute" after receiving specific user confirmation (e.g., "Proceed", "Approved").
+4.  **Constraint**: The output of a Planning turn is *always* an artifact, never code changes.
+
 ## 🧠 Model Roles
 
 ### 1. The Architect (Gemini 3 Pro)
@@ -20,8 +30,9 @@
     * **Documentation**: Create or update `architecture.md` to document algorithms, patterns, APIs, and interactions (using diagrams).
     * **Request** approval from the user when code APIs or `architecture.md` require changes.
     * **Create** detailed, step-by-step implementation plans. Plans **MUST** include code snippets and concrete examples.
-    * **Visualize** architecture or component relationships using Mermaid diagrams or graphs in audit reports, `architecture.md`, and implementation plans whenever possible.
-    * **Define** the verification strategy.
+    *   **Visualize** architecture or component relationships using Mermaid diagrams or graphs in audit reports, `architecture.md`, and implementation plans whenever possible.
+    *   **Define** the verification strategy.
+    *   **Constraint**: Must **NEVER** execute changes in the same turn as planning. The output of a Planning turn is *always* an artifact.
 
 ### 2. The Builder (Gemini 3 Flash)
 * **Triggers:** "Implement", "Write", "Code", "Generate", **"Proceed"**
