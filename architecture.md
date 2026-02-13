@@ -90,6 +90,7 @@ Main library entry point and high-level abstractions.
 | `opcitems.go` | Collection management for items within a group. |
 | `datacallback.go` | Handles asynchronous data change notifications from the OPC server. |
 | `opcbrowser.go` | Implementation of server address space browsing (`IOPCBrowseServerAddressSpace`). |
+| `serverprovider.go` | Defines `serverProvider` interface and `comServerProvider` implementation. |
 | `opcerror.go` | Custom error types and HRESULT mapping. |
 
 ### COM Package (`/com/`)
